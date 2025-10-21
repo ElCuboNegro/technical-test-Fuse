@@ -1,6 +1,6 @@
 {
   "name": "learning-multinode",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Multi-node learning project with database seeding and migration system",
   "main": "index.js",
   "scripts": {
@@ -9,15 +9,23 @@
     "test:coverage": "jest --coverage --run",
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "migrate:up": "tsx src/database/cli/migration-cli.ts up",
-    "migrate:down": "tsx src/database/cli/migration-cli.ts down",
-    "migrate:status": "tsx src/database/cli/migration-cli.ts status",
+    "migrate": "node-pg-migrate",
+    "migrate:up": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "migrate:create": "node-pg-migrate create",
+    "migrate:status": "node-pg-migrate status",
     "seed:test": "tsx src/database/cli/seed-cli.ts --env=test",
     "seed:clean": "tsx src/database/cli/seed-cli.ts clean --env=test",
     "seed:reset": "tsx src/database/cli/seed-cli.ts reset --env=test",
     "setup:test": "tsx src/database/cli/setup-cli.ts --env=test"
   },
-  "keywords": ["database", "seeding", "migration", "postgresql", "testing"],
+  "keywords": [
+    "database",
+    "seeding",
+    "migration",
+    "postgresql",
+    "testing"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {
@@ -25,6 +33,7 @@
     "@types/node": "^20.0.0",
     "@types/pg": "^8.10.0",
     "jest": "^29.5.0",
+    "node-pg-migrate": "^8.0.3",
     "ts-jest": "^29.1.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
