@@ -83,21 +83,50 @@ CREATE INDEX IF NOT EXISTS idx_test_scenarios_name ON test_scenarios (scenario_n
 CREATE INDEX IF NOT EXISTS idx_test_scenarios_type ON test_scenarios (scenario_type);
 CREATE INDEX IF NOT EXISTS idx_test_scenarios_outcome ON test_scenarios (expected_outcome);
 
--- Add constraints for data validation
-ALTER TABLE contact_information 
-  ADD CONSTRAINT chk_contact_state_length CHECK (LENGTH(state) >= 2),
-  ADD CONSTRAINT chk_contact_zip_format CHECK (zip_code ~ '^\d{5}(-\d{4})?$'),
-  ADD CONSTRAINT chk_contact_email_format CHECK (email IS NULL OR email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+-- Add constraints for data validation (only if they don't exist)
+DO $$
+BEGIN
+  -- Contact information constraints
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_contact_state_length') THEN
+    ALTER TABLE contact_information ADD CONSTRAINT chk_contact_state_length CHECK (LENGTH(state) >= 2);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_contact_zip_format') THEN
+    ALTER TABLE contact_information ADD CONSTRAINT chk_contact_zip_format CHECK (zip_code ~ '^\d{5}(-\d{4})?$');
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_contact_email_format') THEN
+    ALTER TABLE contact_information ADD CONSTRAINT chk_contact_email_format CHECK (email IS NULL OR email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+  END IF;
 
-ALTER TABLE financial_data
-  ADD CONSTRAINT chk_financial_income_positive CHECK (monthly_income > 0),
-  ADD CONSTRAINT chk_financial_tenure_non_negative CHECK (job_tenure_months IS NULL OR job_tenure_months >= 0),
-  ADD CONSTRAINT chk_financial_app_tenure_non_negative CHECK (application_job_tenure IS NULL OR application_job_tenure >= 0),
-  ADD CONSTRAINT chk_financial_employment_status CHECK (employment_status IN ('employed', 'self_employed', 'unemployed', 'retired'));
+  -- Financial data constraints
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_financial_income_positive') THEN
+    ALTER TABLE financial_data ADD CONSTRAINT chk_financial_income_positive CHECK (monthly_income > 0);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_financial_tenure_non_negative') THEN
+    ALTER TABLE financial_data ADD CONSTRAINT chk_financial_tenure_non_negative CHECK (job_tenure_months IS NULL OR job_tenure_months >= 0);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_financial_app_tenure_non_negative') THEN
+    ALTER TABLE financial_data ADD CONSTRAINT chk_financial_app_tenure_non_negative CHECK (application_job_tenure IS NULL OR application_job_tenure >= 0);
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_financial_employment_status') THEN
+    ALTER TABLE financial_data ADD CONSTRAINT chk_financial_employment_status CHECK (employment_status IN ('employed', 'self_employed', 'unemployed', 'retired'));
+  END IF;
 
-ALTER TABLE application_data
-  ADD CONSTRAINT chk_application_status CHECK (status IN ('pending', 'approved', 'rejected', 'in_review', 'completed'));
+  -- Application data constraints
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_application_status') THEN
+    ALTER TABLE application_data ADD CONSTRAINT chk_application_status CHECK (status IN ('pending', 'approved', 'rejected', 'in_review', 'completed'));
+  END IF;
 
-ALTER TABLE test_scenarios
-  ADD CONSTRAINT chk_test_scenario_outcome CHECK (expected_outcome IN ('success', 'failure', 'success_with_clarification')),
-  ADD CONSTRAINT chk_test_scenario_type CHECK (scenario_type IN ('standard', 'identity_failure', 'tenure_discrepancy', 'self_employed', 'address_clarification', 'partial_failure'));
+  -- Test scenarios constraints
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_test_scenario_outcome') THEN
+    ALTER TABLE test_scenarios ADD CONSTRAINT chk_test_scenario_outcome CHECK (expected_outcome IN ('success', 'failure', 'success_with_clarification'));
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_test_scenario_type') THEN
+    ALTER TABLE test_scenarios ADD CONSTRAINT chk_test_scenario_type CHECK (scenario_type IN ('standard', 'identity_failure', 'tenure_discrepancy', 'self_employed', 'address_clarification', 'partial_failure'));
+  END IF;
+END $$;

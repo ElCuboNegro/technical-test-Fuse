@@ -36,7 +36,10 @@ Implement a database seeding system that works with the existing pgmigrate-based
   - Create database connection validation with environment detection
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [-] 1.5 Create missing database tables migration
+- [x] 1.5 Create missing database tables migration
+
+
+
 
 
 
@@ -49,37 +52,55 @@ seed the test database using mock-data-generator, ensure it's following the data
 
 ## Phase 2: Data Seeding Infrastructure
 
-- [ ] 2. Write tests for mock data parsing
+- [x] 2. Write tests for mock data parsing
+
+
+
+
+
+
+
+
   - Write tests for parsing of all scenario types from mock data
   - Write tests for special case handling and data validation
   - Write tests for error handling for malformed or missing data
   - _Requirements: 1.1, 3.1, 3.4_
 
-- [ ] 2.1 Implement mock data parsing system
+- [x] 2.1 Implement mock data parsing system
+
+
   - Create MockDataParser class to read tests/mock_test_data.json
   - Implement data extraction for identity, contact, financial, and application data
   - Add special case handling for identity_verification_failure scenarios
   - _Requirements: 1.1, 1.2, 3.1, 3.2, 3.4_
 
-- [ ] 2.2 Write tests for security and hashing system
+- [x] 2.2 Write tests for security and hashing system
+
+
   - Write tests for consistent hashing with same salt values
   - Write tests that raw PII never appears in logs or error messages
   - Write tests for input validation and error handling for invalid formats
   - _Requirements: 2.1, 2.3, 2.4, 2.5_
 
-- [ ] 2.3 Create secure hashing system
+- [x] 2.3 Create secure hashing system
+
+
   - Implement IdentityHasher class with SHA-256 hashing
   - Add SSN and DOB hashing using environment-specific salts
   - Create input validation for SSN format (4 digits) and DOB format (ISO)
   - _Requirements: 2.1, 2.2, 2.5_
 
-- [ ] 2.4 Write tests for data validation and sanitization
+- [x] 2.4 Write tests for data validation and sanitization
+
+
   - Write tests for all required fields validation in mock data
   - Write tests for data sanitization and format conversion
   - Write tests for nullable fields and optional data structures
   - _Requirements: 1.2, 7.8_
 
-- [ ] 2.5 Implement data validation and sanitization
+- [x] 2.5 Implement data validation and sanitization
+
+
   - Validate all required fields are present in mock data
   - Sanitize and format data for database insertion
   - Handle nullable fields and optional data structures

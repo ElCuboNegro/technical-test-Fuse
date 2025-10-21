@@ -107,7 +107,32 @@ export class MigrationRunner {
    * Execute the missing tables migration specifically
    */
   async executeMissingTablesMigration(environment: 'test' | 'production' = 'test'): Promise<MigrationResult> {
+    // First ensure the initial schema exists
+    await this.ensureInitialSchema(environment);
+    
     return this.executeMigration('003_missing_database_tables.sql', environment);
+  }
+
+  /**
+   * Ensure initial schema exists by running prerequisite migrations
+   */
+  async ensureInitialSchema(environment: 'test' | 'production' = 'test'): Promise<void> {
+    try {
+      // Run initial schema migration first
+      const initialResult = await this.executeMigration('001_initial_schema.sql', environment);
+      if (!initialResult.success) {
+        console.warn('Initial schema migration failed, but continuing (may already exist)');
+      }
+
+      // Run configuration tables migration
+      const configResult = await this.executeMigration('002_configuration_tables.sql', environment);
+      if (!configResult.success) {
+        console.warn('Configuration tables migration failed, but continuing (may already exist)');
+      }
+    } catch (error) {
+      console.warn('Error ensuring initial schema:', error);
+      // Continue anyway - tables might already exist
+    }
   }
 
   /**

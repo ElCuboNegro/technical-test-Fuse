@@ -18,7 +18,9 @@
     "seed:clean": "tsx src/database/cli/seed-cli.ts clean --env=test",
     "seed:reset": "tsx src/database/cli/seed-cli.ts reset --env=test",
     "setup:test": "tsx src/database/cli/setup-cli.ts --env=test",
-    "migrate:missing-tables": "tsx src/database/cli/migrate-cli.ts --env=test"
+    "migrate:missing-tables": "tsx src/database/cli/migrate-cli.ts --env=test",
+    "verify:tables": "tsx src/database/cli/verify-tables.ts --env=test",
+    "test:data-structure": "tsx src/database/cli/test-data-structure.ts --env=test"
   },
   "keywords": [
     "database",
@@ -40,6 +42,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
     "pg": "^8.11.0",
     "zod": "^3.22.0"
   }

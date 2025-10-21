@@ -115,7 +115,7 @@ export interface ContactInformation {
   updated_at?: Date;
 }
 
-export interface FinancialData {
+export interface FinancialDataRecord {
   id?: string;
   external_ref: string;
   monthly_income: number;
@@ -150,4 +150,89 @@ export interface TestScenarioRecord {
   applicant_name?: string | null;
   created_at?: Date;
   updated_at?: Date;
+}
+
+// Additional interfaces for seeding system
+export interface SchemaValidationResult {
+  tablesExist: boolean;
+  indexesExist: boolean;
+  columnsValid: boolean;
+  missingElements: string[];
+}
+
+export interface DatabaseValidator {
+  validateConnection(databaseUrl: string): Promise<boolean>;
+  validateSchema(): Promise<SchemaValidationResult>;
+  validateEnvironment(env: 'test' | 'production'): Promise<boolean>;
+  checkRequiredTables(): Promise<string[]>;
+  close(): Promise<void>;
+}
+
+export interface SeedingResult {
+  tableName: string;
+  recordsProcessed: number;
+  recordsInserted: number;
+  recordsUpdated: number;
+  errors: string[];
+}
+
+export interface SeedingOptions {
+  dryRun: boolean;
+  batchSize: number;
+  skipValidation: boolean;
+}
+
+export interface HashedIdentity {
+  dobHash: string;
+  ssnLast4Hash: string;
+  externalReference: string;
+}
+
+export interface IdentityHasher {
+  hashDateOfBirth(dob: string): string;
+  hashSsnLast4(ssn: string): string;
+  validateSsnFormat(ssn: string): boolean;
+  validateDobFormat(dob: string): boolean;
+  createHashedIdentity(identity: IdentityData, externalRef: string): HashedIdentity;
+}
+
+export interface MockDataParser {
+  parseTestScenarios(): Promise<TestScenario[]>;
+  validateScenarioData(scenario: TestScenario): boolean;
+  extractIdentityData(scenario: TestScenario): IdentityData;
+  extractContactData(scenario: TestScenario): ContactData;
+  extractFinancialData(scenario: TestScenario): FinancialData;
+}
+
+export interface ContactData {
+  street_address: string;
+  unit_number?: string | null;
+  city: string;
+  state: string;
+  zip_code: string;
+  email?: string | null;
+}
+
+export interface IdentityData {
+  date_of_birth: string;
+  ssn_last_four: string;
+  correct_date_of_birth?: string;
+  correct_ssn_last_four?: string;
+}
+
+export interface FinancialData {
+  monthly_income: number;
+  job_tenure_months?: number | null;
+  employment_status: string;
+  application_job_tenure?: number | null;
+  job_change_reason?: string | null;
+}
+
+export interface DatabaseSeeder {
+  seedIdentityRecords(scenarios: TestScenario[]): Promise<SeedingResult>;
+  seedContactInformation(scenarios: TestScenario[]): Promise<SeedingResult>;
+  seedFinancialData(scenarios: TestScenario[]): Promise<SeedingResult>;
+  seedApplicationData(scenarios: TestScenario[]): Promise<SeedingResult>;
+  seedTestScenarios(scenarios: TestScenario[]): Promise<SeedingResult>;
+  seedAllTables(scenarios: TestScenario[], options: SeedingOptions): Promise<SeedingResult[]>;
 }

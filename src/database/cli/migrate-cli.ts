@@ -9,6 +9,8 @@ config();
 /**
  * CLI script for running database migrations
  * Usage: tsx src/database/cli/migrate-cli.ts [--env=test|production]
+ * 
+ * Requirements addressed: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8
  */
 
 async function main() {
@@ -23,23 +25,21 @@ async function main() {
 
   console.log(`Running missing tables migration for ${environment} environment...`);
 
-  const runner = new MigrationRunner();
+  const migrationRunner = new MigrationRunner();
 
   try {
     // Execute the missing tables migration
-    const result = await runner.executeMissingTablesMigration(environment);
+    const result = await migrationRunner.executeMissingTablesMigration(environment);
 
     if (result.success) {
       console.log(`✓ Migration completed successfully in ${result.executionTimeMs}ms`);
       
-      // Validate that all tables now exist
-      const tablesExist = await runner.validateTablesExist(environment);
-      
+      // Validate that all tables were created
+      const tablesExist = await migrationRunner.validateTablesExist(environment);
       if (tablesExist) {
         console.log('✓ All required tables validated successfully');
-        process.exit(0);
       } else {
-        console.error('✗ Table validation failed');
+        console.error('✗ Some required tables are missing after migration');
         process.exit(1);
       }
     } else {
@@ -51,7 +51,7 @@ async function main() {
     console.error('✗ Migration execution failed:', error);
     process.exit(1);
   } finally {
-    await runner.cleanup();
+    await migrationRunner.cleanup();
   }
 }
 
