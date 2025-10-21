@@ -1,0 +1,29 @@
+# Development Dockerfile for Next.js Web Application
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for better Docker layer caching
+# Copy package files first
+COPY package*.json ./
+COPY apps/web/package*.json ./apps/web/
+COPY turbo.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Copy Docker-specific environment file
+COPY .env.docker .env
+
+# Set working directory to web app
+WORKDIR /app/apps/web
+
+# Expose port for Next.js development server
+EXPOSE 3000
+
+# Start development server with hot reloading
+CMD ["npm", "run", "dev"]

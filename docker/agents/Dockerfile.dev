@@ -1,0 +1,39 @@
+# Development Dockerfile for LangGraph Agents Application
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for better Docker layer caching
+# Copy package files first
+COPY package*.json ./
+COPY apps/agents/package*.json ./apps/agents/
+COPY turbo.json ./
+COPY langgraph.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Install LangGraph CLI globally for development
+RUN npm install -g @langchain/langgraph-cli
+
+# Copy source code
+COPY . .
+
+# Copy Docker-specific environment file
+COPY .env.docker .env
+
+# Set working directory to agents app
+WORKDIR /app/apps/agents
+
+# Build TypeScript for development
+RUN npm run build:internal
+
+# Go back to root for LangGraph CLI
+WORKDIR /app
+
+# Expose port for LangGraph CLI development server
+EXPOSE 2024
+
+# Start LangGraph development server
+CMD ["npx", "@langchain/langgraph-cli", "dev", "--port", "2024", "--config", "langgraph.json", "--host", "0.0.0.0"]
