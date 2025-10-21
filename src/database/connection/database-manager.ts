@@ -47,14 +47,14 @@ export class DatabaseManager {
     }
 
     const poolKey = environment;
-    
+
     if (this.pools.has(poolKey)) {
       return this.pools.get(poolKey)!;
     }
 
     // Validate environment and get configuration
     const envConfig = this.configManager.getEnvironmentConfig(environment);
-    
+
     // Create pool configuration
     const poolConfig: PoolConfig = {
       connectionString: envConfig.databaseUrl,
@@ -64,7 +64,7 @@ export class DatabaseManager {
 
     // Create new pool
     const pool = new Pool(poolConfig);
-    
+
     // Set up error handling
     pool.on('error', (error) => {
       this.handlePoolError(error, environment);
@@ -121,11 +121,11 @@ export class DatabaseManager {
     }
 
     await Promise.all(shutdownPromises);
-    
+
     this.pools.clear();
     this.shutDown = true;
     this.initialized = false;
-    
+
     console.log('✓ Database connections shut down successfully');
   }
 
@@ -136,7 +136,7 @@ export class DatabaseManager {
     try {
       const pool = this.getPool(environment);
       const client = await pool.connect();
-      
+
       try {
         await client.query('SELECT NOW() as current_time, version() as pg_version');
         return true;
@@ -153,13 +153,13 @@ export class DatabaseManager {
    * Validate connection with retry logic and exponential backoff
    */
   async validateConnectionWithRetry(
-    environment: 'test' | 'production', 
-    maxRetries: number = 3, 
+    environment: 'test' | 'production',
+    maxRetries: number = 3,
     baseDelayMs: number = 1000
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       const isHealthy = await this.validateConnection(environment);
-      
+
       if (isHealthy) {
         return true;
       }
@@ -187,7 +187,7 @@ export class DatabaseManager {
    */
   getPoolStats(environment: 'test' | 'production'): PoolStatistics | null {
     const pool = this.pools.get(environment);
-    
+
     if (!pool) {
       return null;
     }
@@ -206,14 +206,14 @@ export class DatabaseManager {
    */
   getAllPoolStats(): PoolStatistics[] {
     const stats: PoolStatistics[] = [];
-    
+
     for (const environment of this.pools.keys()) {
       const poolStats = this.getPoolStats(environment as 'test' | 'production');
       if (poolStats) {
         stats.push(poolStats);
       }
     }
-    
+
     return stats;
   }
 
@@ -222,11 +222,11 @@ export class DatabaseManager {
    */
   async checkAllConnectionsHealth(): Promise<Record<string, boolean>> {
     const healthStatus: Record<string, boolean> = {};
-    
+
     for (const environment of this.pools.keys()) {
       healthStatus[environment] = await this.validateConnection(environment as 'test' | 'production');
     }
-    
+
     return healthStatus;
   }
 
@@ -242,7 +242,7 @@ export class DatabaseManager {
    */
   private handlePoolError(error: Error, environment: string): void {
     console.error(`Pool error in ${environment} environment:`, error);
-    
+
     // Notify registered error handlers
     this.errorHandlers.forEach(handler => {
       try {

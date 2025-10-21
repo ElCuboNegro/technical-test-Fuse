@@ -1,4 +1,7 @@
-// Core interfaces for the database seeding and migration system
+/**
+ * Database interfaces and types for the seeding system
+ * Requirements addressed: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8
+ */
 
 export interface DatabaseConfiguration {
   testDatabaseUrl?: string;
@@ -21,10 +24,9 @@ export interface ValidationResult {
 
 export interface HashingSalts {
   ssnSalt: string;
-  dobSalt?: string;
+  dobSalt: string;
 }
 
-// Configuration Management Interface
 export interface ConfigurationManager {
   getDatabaseUrl(environment: 'test' | 'production'): string;
   validateEnvironmentVariables(): ValidationResult;
@@ -33,39 +35,41 @@ export interface ConfigurationManager {
   getEnvironmentConfig(environment: 'test' | 'production'): EnvironmentConfig;
 }
 
-// Database Connection and Validation Interfaces
-export interface DatabaseValidator {
-  validateConnection(databaseUrl: string): Promise<boolean>;
-  validateSchema(): Promise<SchemaValidationResult>;
-  validateEnvironment(env: 'test' | 'production'): Promise<boolean>;
-  checkRequiredTables(): Promise<string[]>;
+// Test scenario interfaces matching mock_test_data.json structure
+export interface ApplicantData {
+  name: string;
+  date_of_birth?: string;
+  ssn_last_four?: string;
+  correct_date_of_birth?: string;
+  correct_ssn_last_four?: string;
+  provided_date_of_birth?: string;
+  provided_ssn_last_four?: string;
+  mailing_address?: MailingAddress;
+  complete_address?: MailingAddress;
+  initial_address?: string;
+  email?: string | null;
+  monthly_income?: number;
+  job_tenure_months?: number | null;
+  application_job_tenure?: number;
+  employment_status?: string;
+  job_change_reason?: string;
+  first_attempt?: IdentityAttempt;
+  second_attempt?: IdentityAttempt;
 }
 
-export interface SchemaValidationResult {
-  tablesExist: boolean;
-  indexesExist: boolean;
-  columnsValid: boolean;
-  missingElements: string[];
+export interface MailingAddress {
+  street: string;
+  unit?: string | null;
+  city: string;
+  state: string;
+  zip_code: string;
 }
 
-// Migration System Interfaces (using node-pg-migrate)
-// Simple wrapper around node-pg-migrate functionality
-
-export interface MigrationManager {
-  // Run pending migrations using node-pg-migrate
-  runMigrations(environment: 'test' | 'production'): Promise<void>;
-  
-  // Rollback migrations using node-pg-migrate
-  rollbackMigrations(count: number, environment: 'test' | 'production'): Promise<void>;
-  
-  // Create new migration file using node-pg-migrate
-  createMigration(name: string): Promise<string>;
-  
-  // Get database URL for environment
-  getDatabaseUrl(environment: 'test' | 'production'): string;
+export interface IdentityAttempt {
+  date_of_birth: string;
+  ssn_last_four: string;
 }
 
-// Test Scenario Data Interfaces
 export interface TestScenario {
   scenario_name: string;
   description: string;
@@ -75,145 +79,75 @@ export interface TestScenario {
   failure_reason?: string;
 }
 
-export interface ApplicantData {
-  name: string;
-  date_of_birth?: string;
-  correct_date_of_birth?: string;
-  provided_date_of_birth?: string;
-  ssn_last_four?: string;
-  correct_ssn_last_four?: string;
-  provided_ssn_last_four?: string;
-  mailing_address?: MailingAddress;
-  initial_address?: string;
-  complete_address?: MailingAddress;
-  email?: string;
-  monthly_income?: number;
-  job_tenure_months?: number;
-  application_job_tenure?: number;
-  employment_status?: string;
-  job_change_reason?: string;
-  first_attempt?: AttemptData;
-  second_attempt?: AttemptData;
+export interface MockTestData {
+  test_scenarios: TestScenario[];
+  system_variables: {
+    job_tenure_threshold_months: number;
+    max_identity_attempts: number;
+    required_fields: string[];
+    optional_fields: string[];
+  };
+  response_templates: Record<string, string>;
 }
 
-export interface MailingAddress {
-  street: string;
-  unit?: string;
-  city: string;
-  state: string;
-  zip_code: string;
-}
-
-export interface AttemptData {
-  date_of_birth: string;
-  ssn_last_four: string;
-}
-
-// Database Record Interfaces
-export interface ProcessedIdentityRecord {
+// Database table interfaces
+export interface IdentityRecord {
+  id?: string;
   external_ref: string;
   name: string;
-  dob: Date;
+  dob: string;
   dob_hash: string;
   ssn4_hash: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface ProcessedContactRecord {
+export interface ContactInformation {
+  id?: string;
   external_ref: string;
-  street: string;
-  unit?: string;
+  street_address: string;
+  unit_number?: string | null;
   city: string;
   state: string;
   zip_code: string;
-  email?: string;
-  created_at: Date;
-  updated_at: Date;
+  email?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface ProcessedFinancialRecord {
+export interface FinancialData {
+  id?: string;
   external_ref: string;
   monthly_income: number;
-  job_tenure_months?: number;
+  job_tenure_months?: number | null;
   employment_status: string;
-  job_change_reason?: string;
-  created_at: Date;
-  updated_at: Date;
+  application_job_tenure?: number | null;
+  job_change_reason?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface ProcessedApplicationRecord {
+export interface ApplicationData {
+  id?: string;
   external_ref: string;
-  application_job_tenure?: number;
-  initial_address?: string;
-  complete_address?: any;
-  first_attempt?: any;
-  second_attempt?: any;
-  created_at: Date;
-  updated_at: Date;
+  application_id?: string | null;
+  application_date?: Date;
+  status: string;
+  notes?: string | null;
+  metadata?: any;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
-export interface ProcessedScenarioRecord {
+export interface TestScenarioRecord {
+  id?: string;
   scenario_name: string;
   description: string;
-  expected_flow: string[];
   expected_outcome: string;
-  failure_reason?: string;
-  created_at: Date;
-  updated_at: Date;
+  scenario_type: string;
+  expected_flow?: any;
+  failure_reason?: string | null;
+  applicant_name?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
 }
-
-export interface ProcessedRecords {
-  identity: ProcessedIdentityRecord;
-  contact?: ProcessedContactRecord;
-  financial?: ProcessedFinancialRecord;
-  application?: ProcessedApplicationRecord;
-  scenario: ProcessedScenarioRecord;
-}
-
-// Seeding Result Interfaces
-export interface SeedResult {
-  inserted: number;
-  updated: number;
-  skipped: number;
-  errors: SeedError[];
-}
-
-export interface SeedError {
-  record: string;
-  error: string;
-  recoverable: boolean;
-}
-
-export interface ComprehensiveSeedResult {
-  identity: SeedResult;
-  contact: SeedResult;
-  financial: SeedResult;
-  application: SeedResult;
-  scenarios: SeedResult;
-  systemVariables: SeedResult;
-  responseTemplates: SeedResult;
-  totalRecords: number;
-  errors: SeedError[];
-}
-
-// CLI Interfaces
-export interface CLIOptions {
-  environment: 'test' | 'production';
-  confirm: boolean;
-  dryRun: boolean;
-  verbose: boolean;
-  batchSize?: number;
-  version?: string;
-  name?: string;
-}
-
-// Re-export configuration management
-export { ConfigurationManager } from '../configuration/manager';
-export { DatabaseValidator } from '../validation/validator';
-export { 
-  detectEnvironment,
-  validateEnvironmentSafety,
-  getValidatedEnvironmentConfig,
-  type EnvironmentDetectionResult
-} from '../configuration/environment';

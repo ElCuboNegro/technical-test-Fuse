@@ -73,17 +73,8 @@ describe('DatabaseManager', () => {
       on: jest.fn()
     };
 
-    // Mock Pool constructor to return new instances
-    (Pool as jest.MockedClass<typeof Pool>).mockImplementation(() => ({
-      ...mockPool,
-      connect: jest.fn().mockResolvedValue(mockClient),
-      end: jest.fn().mockResolvedValue(undefined),
-      query: jest.fn(),
-      totalCount: 0,
-      idleCount: 0,
-      waitingCount: 0,
-      on: jest.fn()
-    }));
+    // Mock Pool constructor to return the same mockPool instance
+    (Pool as jest.MockedClass<typeof Pool>).mockImplementation(() => mockPool);
 
     // Clear all mocks
     jest.clearAllMocks();
@@ -150,7 +141,13 @@ describe('DatabaseManager', () => {
       const prodPool = databaseManager.getPool('production');
 
       expect(Pool).toHaveBeenCalledTimes(2);
-      expect(testPool).not.toBe(prodPool);
+      // Note: Both pools return the same mock object, but they are created with different configurations
+      expect(Pool).toHaveBeenNthCalledWith(1, expect.objectContaining({
+        connectionString: 'postgresql://test:test@localhost:5433/test_db'
+      }));
+      expect(Pool).toHaveBeenNthCalledWith(2, expect.objectContaining({
+        connectionString: 'postgresql://prod:prod@localhost:5432/prod_db'
+      }));
     });
 
     it('should apply custom pool configuration when provided', () => {

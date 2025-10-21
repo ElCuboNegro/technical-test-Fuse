@@ -36,7 +36,9 @@ Implement a database seeding system that works with the existing pgmigrate-based
   - Create database connection validation with environment detection
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 1.5 Create missing database tables migration
+- [-] 1.5 Create missing database tables migration
+
+
 
 
   - Create migration for contact_information, financial_data, application_data, and 
