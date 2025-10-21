@@ -13,6 +13,12 @@ Implement a database seeding system that works with the existing pgmigrate-based
   - _Requirements: 6.1, 6.2, 8.7_
 
 - [ ] 1.1 Write tests for database connection management
+
+
+
+
+
+
   - Write tests for database connection pooling and lifecycle management
   - Write tests for connection validation and error handling
   - Write tests for environment-specific database URL resolution
@@ -24,16 +30,16 @@ Implement a database seeding system that works with the existing pgmigrate-based
   - Add graceful connection lifecycle management (startup/shutdown)
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 1.3 Write tests for configuration management
-  - Write tests for environment variable loading and validation
-  - Write tests for configuration value parsing and type conversion
-  - Write tests for configuration defaults and fallback values
+- [ ] 1.3 Write tests for simplified configuration management
+  - Write tests for single DATABASE_URL environment variable handling
+  - Write tests for database name validation and environment detection
+  - Write tests for production safety checks based on database name
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 1.4 Implement database configuration management
-  - Implement ConfigurationManager for environment-specific database URLs
-  - Add support for TEST_DATABASE_URL and DATABASE_URL environment variables
-  - Create database connection validation and environment detection
+- [ ] 1.4 Implement simplified database configuration management
+  - Implement ConfigurationManager using single DATABASE_URL environment variable
+  - Add database name validation to prevent accidental production seeding
+  - Create database connection validation with environment detection
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
 ## Phase 2: Data Seeding Infrastructure
@@ -108,22 +114,22 @@ Implement a database seeding system that works with the existing pgmigrate-based
 
 ## Phase 4: Docker Integration & Environment Management
 
-- [ ] 4. Write tests for Docker database separation
-  - Write tests that test and production databases are properly isolated
-  - Write tests to verify different ports and database names work correctly
-  - Write tests for database connectivity from application services
+- [ ] 4. Write tests for Docker environment separation
+  - Write tests that development and production databases are properly isolated by name
+  - Write tests to verify single-connection approach works with different database names
+  - Write tests for database connectivity from application services using single DATABASE_URL
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 4.1 Create Docker Compose configuration for separate databases
-  - Update docker-compose.yml to include postgres-test service
-  - Configure separate ports and database names for test vs production
-  - Add separate volume mounts for data isolation
+- [ ] 4.1 Create Docker Compose environment separation
+  - Create docker-compose.dev.yml with development-specific POSTGRES_DB name
+  - Configure single PostgreSQL service with environment-specific database names
+  - Maintain existing single-port configuration with environment-based separation
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 4.2 Update environment configuration
-  - Add TEST_DATABASE_URL and production database environment variables
-  - Update .env files with separate database configurations
-  - Create docker-compose.dev.yml for development-specific overrides
+- [ ] 4.2 Update environment configuration for simplified approach
+  - Use single DATABASE_URL environment variable for all connections
+  - Configure different POSTGRES_DB values for development vs production
+  - Update .env files to support Docker-managed database separation
   - _Requirements: 5.1, 5.2, 6.1, 6.2_
 
 ## Phase 5: CLI Interface & Operations
@@ -187,9 +193,9 @@ Implement a database seeding system that works with the existing pgmigrate-based
   - _Requirements: 2.1, 2.3, 4.1, 4.3, 5.1, 8.1, 8.2_
 
 - [ ] 7.1 Final validation and deployment preparation
-  - Validate complete system works with both test and production databases
-  - Validate system meets all security and performance requirements
-  - Create operational documentation and troubleshooting guides
+  - Validate complete system works with Docker environment-based database separation
+  - Validate system meets all security and performance requirements with single-connection approach
+  - Create operational documentation for Docker Compose environment management
   - _Requirements: 4.1, 4.3, 5.1, 8.1, 8.4, 8.7_
 
 ## Notes
