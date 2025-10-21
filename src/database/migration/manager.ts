@@ -1,80 +1,109 @@
-// Migration Manager - handles migration execution and tracking
+// Migration Manager - simple wrapper around node-pg-migrate
 
-import { 
-  MigrationManager as IMigrationManager, 
-  Migration, 
-  MigrationResult, 
-  ValidationResult 
-} from '../interfaces';
+import { MigrationManager as IMigrationManager } from '../interfaces';
+import { ConfigurationManager } from '../configuration';
+import { spawn } from 'child_process';
 
 export class MigrationManager implements IMigrationManager {
-  private environment: 'test' | 'production';
-  private migrationsPath: string;
+  private configManager: ConfigurationManager;
 
-  constructor(environment: 'test' | 'production', migrationsPath: string = './migrations') {
-    this.environment = environment;
-    this.migrationsPath = migrationsPath;
+  constructor() {
+    this.configManager = new ConfigurationManager();
   }
 
-  async runMigrations(environment: 'test' | 'production'): Promise<MigrationResult> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
+  /**
+   * Run pending migrations using node-pg-migrate
+   */
+  async runMigrations(environment: 'test' | 'production'): Promise<void> {
+    const databaseUrl = this.getDatabaseUrl(environment);
+    
+    return new Promise((resolve, reject) => {
+      const migrationProcess = spawn('npx', ['node-pg-migrate', 'up'], {
+        env: {
+          ...process.env,
+          DATABASE_URL: databaseUrl
+        },
+        stdio: 'inherit'
+      });
+
+      migrationProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Migration failed with exit code ${code}`));
+        }
+      });
+
+      migrationProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
-  async rollbackMigration(version: string): Promise<MigrationResult> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
+  /**
+   * Rollback migrations using node-pg-migrate
+   */
+  async rollbackMigrations(count: number, environment: 'test' | 'production'): Promise<void> {
+    const databaseUrl = this.getDatabaseUrl(environment);
+    
+    return new Promise((resolve, reject) => {
+      const migrationProcess = spawn('npx', ['node-pg-migrate', 'down', count.toString()], {
+        env: {
+          ...process.env,
+          DATABASE_URL: databaseUrl
+        },
+        stdio: 'inherit'
+      });
+
+      migrationProcess.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Migration rollback failed with exit code ${code}`));
+        }
+      });
+
+      migrationProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
-  async getCurrentVersion(): Promise<string> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
-  }
-
-  async getPendingMigrations(): Promise<Migration[]> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
-  }
-
+  /**
+   * Create new migration file using node-pg-migrate
+   */
   async createMigration(name: string): Promise<string> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
-  }
+    return new Promise((resolve, reject) => {
+      const migrationProcess = spawn('npx', ['node-pg-migrate', 'create', name], {
+        stdio: 'pipe'
+      });
 
-  async validateMigrations(): Promise<ValidationResult> {
-    // Implementation placeholder
-    throw new Error('Method not implemented');
-  }
+      let output = '';
+      migrationProcess.stdout?.on('data', (data) => {
+        output += data.toString();
+      });
 
-  /**
-   * Generate migration filename based on naming convention
-   * Format: {version}_{name}.sql
-   */
-  generateMigrationFilename(name: string): string {
-    const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
-    const sanitizedName = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    return `${timestamp}_${sanitizedName}.sql`;
-  }
+      migrationProcess.on('close', (code) => {
+        if (code === 0) {
+          // Extract filename from output
+          const match = output.match(/Created migration -- (.+)/);
+          const filename = match ? match[1] : `migration_${name}`;
+          resolve(filename);
+        } else {
+          reject(new Error(`Migration creation failed with exit code ${code}`));
+        }
+      });
 
-  /**
-   * Parse migration filename to extract version and name
-   */
-  parseMigrationFilename(filename: string): { version: string; name: string } {
-    const match = filename.match(/^(\d+)_(.+)\.sql$/);
-    if (!match) {
-      throw new Error(`Invalid migration filename format: ${filename}`);
-    }
-    return {
-      version: match[1],
-      name: match[2]
-    };
+      migrationProcess.on('error', (error) => {
+        reject(error);
+      });
+    });
   }
 
   /**
-   * Generate checksum for migration file content
+   * Get database URL for environment
    */
-  generateChecksum(content: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex');
+  getDatabaseUrl(environment: 'test' | 'production'): string {
+    return this.configManager.getDatabaseUrl(environment);
   }
 }

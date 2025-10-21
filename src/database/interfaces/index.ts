@@ -48,37 +48,21 @@ export interface SchemaValidationResult {
   missingElements: string[];
 }
 
-// Migration System Interfaces
-export interface Migration {
-  version: string;
-  name: string;
-  filename: string;
-  up: string;
-  down: string;
-  checksum: string;
-  appliedAt?: Date;
-}
-
-export interface MigrationResult {
-  success: boolean;
-  appliedMigrations: string[];
-  errors: MigrationError[];
-  currentVersion: string;
-}
-
-export interface MigrationError {
-  migration: string;
-  error: string;
-  rollbackRequired: boolean;
-}
+// Migration System Interfaces (using node-pg-migrate)
+// Simple wrapper around node-pg-migrate functionality
 
 export interface MigrationManager {
-  runMigrations(environment: 'test' | 'production'): Promise<MigrationResult>;
-  rollbackMigration(version: string): Promise<MigrationResult>;
-  getCurrentVersion(): Promise<string>;
-  getPendingMigrations(): Promise<Migration[]>;
+  // Run pending migrations using node-pg-migrate
+  runMigrations(environment: 'test' | 'production'): Promise<void>;
+  
+  // Rollback migrations using node-pg-migrate
+  rollbackMigrations(count: number, environment: 'test' | 'production'): Promise<void>;
+  
+  // Create new migration file using node-pg-migrate
   createMigration(name: string): Promise<string>;
-  validateMigrations(): Promise<ValidationResult>;
+  
+  // Get database URL for environment
+  getDatabaseUrl(environment: 'test' | 'production'): string;
 }
 
 // Test Scenario Data Interfaces
@@ -223,3 +207,13 @@ export interface CLIOptions {
   version?: string;
   name?: string;
 }
+
+// Re-export configuration management
+export { ConfigurationManager } from '../configuration/manager';
+export { DatabaseValidator } from '../validation/validator';
+export { 
+  detectEnvironment,
+  validateEnvironmentSafety,
+  getValidatedEnvironmentConfig,
+  type EnvironmentDetectionResult
+} from '../configuration/environment';

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A comprehensive database seeding system for populating all necessary tables with test data based on existing mock test scenarios. The system must create and populate identity_records, contact_information, financial_data, and application_data tables to support complete voice verification agent testing. The system must support separate test and production databases while maintaining security best practices for PII handling and using the established test data structure from tests/mock_test_data.json.
+A comprehensive database seeding system for populating all necessary tables with test data based on existing mock test scenarios. The system must create and populate identity_records, contact_information, financial_data, and application_data tables to support complete voice verification agent testing. The system uses Docker Compose environment management for database separation while maintaining security best practices for PII handling and using the established test data structure from tests/mock_test_data.json.
 
 ## Glossary
 
@@ -13,8 +13,8 @@ A comprehensive database seeding system for populating all necessary tables with
 - **Test_Scenarios_Table**: PostgreSQL table storing test scenario metadata and expected outcomes
 - **Seeding_System**: Automated process for populating all database tables with test data from mock scenarios
 - **Mock_Test_Data**: JSON file containing predefined test scenarios with complete applicant data
-- **Test_Database**: Separate PostgreSQL database instance for testing and development
-- **Production_Database**: PostgreSQL database instance for production use
+- **Database_Environment**: Docker-managed PostgreSQL instance with environment-specific database names
+- **Docker_Compose_Environment**: Container orchestration managing database separation through compose files
 - **Hash_Function**: SHA-256 cryptographic function for securing sensitive data
 - **External_Reference**: Unique identifier linking all related records across tables (scenario_name)
 
@@ -58,39 +58,39 @@ A comprehensive database seeding system for populating all necessary tables with
 
 ### Requirement 4
 
-**User Story:** As a developer, I want to target specific database environments (test vs production), so that I can safely manage test data without affecting production systems.
+**User Story:** As a developer, I want to target specific database environments through Docker Compose, so that I can safely manage test data without affecting production systems.
 
 #### Acceptance Criteria
 
-1. THE Seeding_System SHALL support separate DATABASE_URL configurations for test and production environments
-2. THE Seeding_System SHALL provide environment-specific seeding commands (--env=test, --env=production)
-3. WHEN targeting test environment, THE Seeding_System SHALL use TEST_DATABASE_URL if available
-4. THE Seeding_System SHALL prevent accidental seeding of production databases with test data
+1. THE Seeding_System SHALL use a single DATABASE_URL connection string from environment variables
+2. THE Docker_Compose_Environment SHALL manage database separation through different POSTGRES_DB names
+3. WHEN running in development mode, THE Seeding_System SHALL connect to the database specified in docker-compose.dev.yml
+4. THE Seeding_System SHALL validate database name to prevent accidental seeding of production databases with test data
 5. THE Seeding_System SHALL provide a reset operation that cleans and repopulates test data in one command
 
 ### Requirement 5
 
-**User Story:** As a system administrator, I want Docker Compose to support separate test and production database instances, so that I can isolate test data from production data.
+**User Story:** As a system administrator, I want Docker Compose to manage database environments through configuration, so that I can isolate test data from production data using a single PostgreSQL service.
 
 #### Acceptance Criteria
 
-1. THE Docker_Compose_Configuration SHALL define separate postgres-test and postgres-prod services (docker-compose.dev.yml / docker-compose.yml)
-2. THE Docker_Compose_Configuration SHALL use different database names for test and production environments
-3. THE Docker_Compose_Configuration SHALL expose different ports for test and production databases
-4. THE Docker_Compose_Configuration SHALL use separate volume mounts for test and production data persistence
+1. THE Docker_Compose_Configuration SHALL use different POSTGRES_DB environment variables for development and production
+2. THE Docker_Compose_Configuration SHALL maintain a single PostgreSQL service with environment-specific database names
+3. THE Docker_Compose_Configuration SHALL use docker-compose.dev.yml for development with test database name
+4. THE Docker_Compose_Configuration SHALL use docker-compose.yml for production with production database name
 5. THE Seeding_System SHALL validate database connectivity and schema before proceeding with seeding operations
 
 ### Requirement 6
 
-**User Story:** As a developer, I want environment-specific configuration management, so that I can easily switch between test and production database connections.
+**User Story:** As a developer, I want simplified configuration management using Docker environment variables, so that I can easily work with different database environments without complex URL management.
 
 #### Acceptance Criteria
 
-1. THE Configuration_System SHALL support TEST_DATABASE_URL environment variable for test database connections
-2. THE Configuration_System SHALL fall back to DATABASE_URL when TEST_DATABASE_URL is not set
-3. WHEN running in test mode, THE Seeding_System SHALL validate that it's connecting to a test database
-4. THE Seeding_System SHALL refuse to seed production databases with test scenario data
-5. THE Configuration_System SHALL provide clear logging of which database environment is being used
+1. THE Configuration_System SHALL use a single DATABASE_URL environment variable for all connections
+2. THE Docker_Environment SHALL provide the appropriate database connection through POSTGRES_DB configuration
+3. WHEN running seeding operations, THE Seeding_System SHALL validate the target database name matches expected environment
+4. THE Seeding_System SHALL refuse to seed databases with production-like names using test scenario data
+5. THE Configuration_System SHALL provide clear logging of which database name is being used for seeding
 
 ### Requirement 7
 

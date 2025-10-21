@@ -2,907 +2,418 @@
 
 ## Overview
 
-The database seeding system provides automated population of the identity_records table using predefined test scenarios from mock_test_data.json. The system supports separate test and production database environments with secure PII handling and comprehensive validation.
+A comprehensive database seeding system that uses Docker Compose environment management for database separation while maintaining a single, clean connection architecture. The system populates all necessary tables with test data from mock scenarios to support complete voice verification agent testing.
 
 ## Architecture
 
-### High-Level Architecture
+### Core Design Principles
+
+1. **Single Connection Pattern**: Use one DATABASE_URL that connects to whatever database Docker exposes
+2. **Docker Environment Separation**: Leverage Docker Compose files to manage different database environments
+3. **Security First**: Hash all PII data before storage, never log sensitive information
+4. **Atomic Operations**: Ensure data consistency through transaction-based seeding
+5. **Idempotent Design**: Support multiple runs without data corruption through upsert patterns
+
+### System Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "Configuration Layer"
+    subgraph "Docker Environment"
+        DC[Docker Compose]
+        PG[(PostgreSQL Container)]
+        DC --> PG
+    end
+    
+    subgraph "Application Layer"
+        CLI[Seeding CLI]
+        DM[DatabaseManager]
+        CS[ConfigurationSystem]
+        CLI --> DM
+        DM --> CS
+    end
+    
+    subgraph "Data Processing"
+        MP[MockDataParser]
+        IH[IdentityHasher]
+        DS[DatabaseSeeder]
+        MP --> IH
+        IH --> DS
+    end
+    
+    subgraph "Data Sources"
+        MD[mock_test_data.json]
         ENV[Environment Variables]
-        CONFIG[Database Configuration]
-        MOCK[Mock Test Data JSON]
+        MD --> MP
+        ENV --> CS
     end
     
-    subgraph "Seeding System"
-        CLI[CLI Interface]
-        PARSER[Data Parser]
-        HASHER[Hash Generator]
-        VALIDATOR[Database Validator]
-        SEEDER[Database Seeder]
-    end
-    
-    subgraph "Database Layer"
-        TEST_DB[(Test Database)]
-        PROD_DB[(Production Database)]
-    end
-    
-    ENV --> CONFIG
-    MOCK --> PARSER
-    CLI --> VALIDATOR
-    CLI --> SEEDER
-    PARSER --> HASHER
-    HASHER --> SEEDER
-    CONFIG --> VALIDATOR
-    VALIDATOR --> TEST_DB
-    VALIDATOR --> PROD_DB
-    SEEDER --> TEST_DB
-    SEEDER --> PROD_DB
-```
-
-### Component Architecture
-
-```mermaid
-graph LR
-    subgraph "Core Components"
-        A[MockDataParser]
-        B[IdentityHasher]
-        C[DatabaseValidator]
-        D[DatabaseSeeder]
-        E[ConfigurationManager]
-    end
-    
-    subgraph "CLI Interface"
-        F[SeedCommand]
-        G[CleanCommand]
-        H[ResetCommand]
-    end
-    
-    F --> A
-    F --> B
-    F --> C
-    F --> D
-    G --> D
-    H --> G
-    H --> F
-    E --> C
-    E --> D
+    CLI --> MP
+    DM --> PG
+    DS --> DM
 ```
 
 ## Components and Interfaces
 
-### 1. MockDataParser
+### 1. Configuration System
 
-**Purpose**: Parse and extract identity data from mock_test_data.json
+**Purpose**: Simplified configuration management using single DATABASE_URL
 
 ```typescript
-interface MockDataParser {
-  loadTestScenarios(): Promise<TestScenario[]>
-  extractIdentityData(scenario: TestScenario): IdentityRecord
-  extractContactData(scenario: TestScenario): ContactRecord
-  extractFinancialData(scenario: TestScenario): FinancialRecord
-  extractApplicationData(scenario: TestScenario): ApplicationRecord
-  handleSpecialCases(scenario: TestScenario): ProcessedRecords
+interface DatabaseConfig {
+  databaseUrl: string;
+  databaseName: string;
+  isProductionDatabase: boolean;
 }
 
-interface TestScenario {
-  scenario_name: string
-  description: string
-  applicant_data: ApplicantData
-  expected_flow: string[]
-  expected_outcome: string
-  failure_reason?: string
+interface SecurityConfig {
+  ssnSalt: string;
+  dobSalt: string;
 }
 
-interface ApplicantData {
-  name: string
-  date_of_birth?: string
-  correct_date_of_birth?: string
-  provided_date_of_birth?: string
-  ssn_last_four?: string
-  correct_ssn_last_four?: string
-  provided_ssn_last_four?: string
-  mailing_address?: MailingAddress
-  initial_address?: string
-  complete_address?: MailingAddress
-  email?: string
-  monthly_income?: number
-  job_tenure_months?: number
-  application_job_tenure?: number
-  employment_status?: string
-  job_change_reason?: string
-  first_attempt?: AttemptData
-  second_attempt?: AttemptData
-}
-
-interface MailingAddress {
-  street: string
-  unit?: string
-  city: string
-  state: string
-  zip_code: string
-}
-
-interface AttemptData {
-  date_of_birth: string
-  ssn_last_four: string
-}
-
-interface ProcessedRecords {
-  identity: IdentityRecord
-  contact?: ContactRecord
-  financial?: FinancialRecord
-  application?: ApplicationRecord
-  scenario: ScenarioRecord
+class ConfigurationManager {
+  getDatabaseConfig(): DatabaseConfig
+  getSecurityConfig(): SecurityConfig
+  validateEnvironment(): boolean
+  isProductionEnvironment(): boolean
 }
 ```
 
 **Key Features**:
-- Handles standard applicant_data format
-- Processes special cases (correct_* fields, first_attempt/second_attempt)
-- Validates data format before processing
-- Supports multiple identity records per scenario when needed
+- Single DATABASE_URL environment variable
+- Database name extraction for environment validation
+- Production safety checks based on database name patterns
+- Environment variable validation and defaults
 
-### 2. IdentityHasher
+### 2. Database Connection Management
 
-**Purpose**: Secure hashing of sensitive identity data
+**Purpose**: Simplified connection pooling with single connection string
 
 ```typescript
-interface IdentityHasher {
-  hashSSN(ssnLast4: string): string
-  hashDOB(dobISO: string): string
-  validateSSNFormat(ssn: string): boolean
-  validateDOBFormat(dob: string): boolean
+interface ConnectionPool {
+  query<T>(sql: string, params?: any[]): Promise<T[]>
+  transaction<T>(callback: (client: any) => Promise<T>): Promise<T>
+  validateConnection(): Promise<boolean>
+  close(): Promise<void>
 }
 
-class IdentityHasher implements IdentityHasher {
-  private ssnSalt: string
-  private dobSalt: string
+class DatabaseManager {
+  private pool: Pool
   
-  constructor(ssnSalt: string, dobSalt?: string) {
-    this.ssnSalt = ssnSalt
-    this.dobSalt = dobSalt || ssnSalt
-  }
-  
-  hashSSN(ssnLast4: string): string {
-    if (!this.validateSSNFormat(ssnLast4)) {
-      throw new Error('Invalid SSN format')
-    }
-    return crypto.createHash('sha256')
-      .update(ssnLast4 + this.ssnSalt)
-      .digest('hex')
-  }
+  constructor(config: DatabaseConfig)
+  getConnection(): ConnectionPool
+  validateSchema(): Promise<boolean>
+  getDatabaseName(): string
 }
 ```
 
-### 3. DatabaseValidator
+**Key Features**:
+- Single connection pool for all operations
+- Database name validation for environment safety
+- Schema validation before seeding operations
+- Graceful connection lifecycle management
 
-**Purpose**: Validate database connectivity and schema
+### 3. Mock Data Processing
+
+**Purpose**: Parse and validate test scenarios from JSON file
 
 ```typescript
-interface DatabaseValidator {
-  validateConnection(databaseUrl: string): Promise<boolean>
-  validateSchema(): Promise<SchemaValidationResult>
-  validateEnvironment(env: 'test' | 'production'): Promise<boolean>
-  checkRequiredTables(): Promise<string[]>
+interface TestScenario {
+  scenario_name: string;
+  description: string;
+  identity: IdentityData;
+  contact: ContactData;
+  financial: FinancialData;
+  application: ApplicationData;
+  expected_outcome: string;
 }
 
-interface SchemaValidationResult {
-  tablesExist: boolean
-  indexesExist: boolean
-  columnsValid: boolean
-  missingElements: string[]
+interface IdentityData {
+  date_of_birth: string;
+  ssn_last_four: string;
+  correct_date_of_birth?: string;
+  correct_ssn_last_four?: string;
+}
+
+class MockDataParser {
+  parseTestScenarios(): Promise<TestScenario[]>
+  validateScenarioData(scenario: TestScenario): boolean
+  extractIdentityData(scenario: TestScenario): IdentityData
+  extractContactData(scenario: TestScenario): ContactData
+  extractFinancialData(scenario: TestScenario): FinancialData
 }
 ```
 
-### 4. DatabaseSeeder
+**Key Features**:
+- Comprehensive JSON parsing with validation
+- Support for special case scenarios (identity_verification_failure)
+- Data extraction for all table types
+- Error handling for malformed data
 
-**Purpose**: Execute seeding operations against the database
+### 4. Security and Hashing System
+
+**Purpose**: Secure PII handling with consistent hashing
 
 ```typescript
-interface DatabaseSeeder {
-  seedAllTables(processedData: ProcessedRecords[]): Promise<ComprehensiveSeedResult>
-  seedIdentityRecords(records: ProcessedIdentityRecord[]): Promise<SeedResult>
-  seedContactRecords(records: ProcessedContactRecord[]): Promise<SeedResult>
-  seedFinancialRecords(records: ProcessedFinancialRecord[]): Promise<SeedResult>
-  seedApplicationRecords(records: ProcessedApplicationRecord[]): Promise<SeedResult>
-  seedScenarioRecords(records: ProcessedScenarioRecord[]): Promise<SeedResult>
-  seedSystemVariables(variables: any): Promise<SeedResult>
-  seedResponseTemplates(templates: any): Promise<SeedResult>
-  cleanTestData(environment: string): Promise<CleanResult>
-  resetTestData(): Promise<ResetResult>
-  checkExistingRecords(externalRefs: string[]): Promise<string[]>
+interface HashedIdentity {
+  dobHash: string;
+  ssnLast4Hash: string;
+  externalReference: string;
 }
 
-interface ComprehensiveSeedResult {
-  identity: SeedResult
-  contact: SeedResult
-  financial: SeedResult
-  application: SeedResult
-  scenarios: SeedResult
-  systemVariables: SeedResult
-  responseTemplates: SeedResult
-  totalRecords: number
-  errors: SeedError[]
-}
-
-interface ProcessedIdentityRecord {
-  external_ref: string
-  name: string
-  dob: Date
-  dob_hash: string
-  ssn4_hash: string
-  created_at: Date
-  updated_at: Date
-}
-
-interface ProcessedContactRecord {
-  external_ref: string
-  street: string
-  unit?: string
-  city: string
-  state: string
-  zip_code: string
-  email?: string
-  created_at: Date
-  updated_at: Date
-}
-
-interface ProcessedFinancialRecord {
-  external_ref: string
-  monthly_income: number
-  job_tenure_months?: number
-  employment_status: string
-  job_change_reason?: string
-  created_at: Date
-  updated_at: Date
-}
-
-interface ProcessedApplicationRecord {
-  external_ref: string
-  application_job_tenure?: number
-  initial_address?: string
-  complete_address?: any
-  first_attempt?: any
-  second_attempt?: any
-  created_at: Date
-  updated_at: Date
-}
-
-interface ProcessedScenarioRecord {
-  scenario_name: string
-  description: string
-  expected_flow: string[]
-  expected_outcome: string
-  failure_reason?: string
-  created_at: Date
-  updated_at: Date
-}
-
-interface SeedResult {
-  inserted: number
-  updated: number
-  skipped: number
-  errors: SeedError[]
+class IdentityHasher {
+  hashDateOfBirth(dob: string): string
+  hashSsnLast4(ssn: string): string
+  validateSsnFormat(ssn: string): boolean
+  validateDobFormat(dob: string): boolean
+  createHashedIdentity(identity: IdentityData, externalRef: string): HashedIdentity
 }
 ```
 
-### 5. ConfigurationManager
+**Key Features**:
+- SHA-256 hashing with environment-specific salts
+- Input validation for SSN (4 digits) and DOB (ISO format)
+- No raw PII in logs or error messages
+- Consistent hashing for test repeatability
 
-**Purpose**: Manage environment-specific database configurations
+### 5. Database Seeding Engine
+
+**Purpose**: Coordinate all table seeding operations
 
 ```typescript
-interface ConfigurationManager {
-  getDatabaseUrl(environment: 'test' | 'production'): string
-  validateEnvironmentVariables(): ValidationResult
-  getHashingSalts(): HashingSalts
-  isTestEnvironment(databaseUrl: string): boolean
+interface SeedingResult {
+  tableName: string;
+  recordsProcessed: number;
+  recordsInserted: number;
+  recordsUpdated: number;
+  errors: string[];
 }
 
-interface HashingSalts {
-  ssnSalt: string
-  dobSalt?: string
-}
-```
-
-### 6. MigrationManager
-
-**Purpose**: Handle database schema migrations and versioning
-
-```typescript
-interface MigrationManager {
-  runMigrations(environment: 'test' | 'production'): Promise<MigrationResult>
-  rollbackMigration(version: string): Promise<MigrationResult>
-  getCurrentVersion(): Promise<string>
-  getPendingMigrations(): Promise<Migration[]>
-  createMigration(name: string): Promise<string>
-  validateMigrations(): Promise<ValidationResult>
+interface SeedingOptions {
+  dryRun: boolean;
+  batchSize: number;
+  skipValidation: boolean;
 }
 
-interface Migration {
-  version: string
-  name: string
-  filename: string
-  up: string
-  down: string
-  checksum: string
-  appliedAt?: Date
-}
-
-interface MigrationResult {
-  success: boolean
-  appliedMigrations: string[]
-  errors: MigrationError[]
-  currentVersion: string
-}
-
-interface MigrationError {
-  migration: string
-  error: string
-  rollbackRequired: boolean
+class DatabaseSeeder {
+  seedIdentityRecords(scenarios: TestScenario[]): Promise<SeedingResult>
+  seedContactInformation(scenarios: TestScenario[]): Promise<SeedingResult>
+  seedFinancialData(scenarios: TestScenario[]): Promise<SeedingResult>
+  seedApplicationData(scenarios: TestScenario[]): Promise<SeedingResult>
+  seedTestScenarios(scenarios: TestScenario[]): Promise<SeedingResult>
+  seedAllTables(scenarios: TestScenario[], options: SeedingOptions): Promise<SeedingResult[]>
 }
 ```
+
+**Key Features**:
+- Upsert operations based on external_reference
+- Batch processing for performance
+- Transaction-based operations for consistency
+- Comprehensive result reporting
 
 ## Data Models
 
-### Migration System Architecture
-
-```mermaid
-graph TB
-    subgraph "Migration System"
-        MIG_MGR[Migration Manager]
-        MIG_RUNNER[Migration Runner]
-        MIG_VALIDATOR[Migration Validator]
-        MIG_TRACKER[Migration Tracker]
-    end
-    
-    subgraph "Migration Storage"
-        MIG_FILES[Migration Files]
-        MIG_TABLE[(Migration History Table)]
-    end
-    
-    subgraph "Database Operations"
-        SCHEMA_CREATE[Schema Creation]
-        SCHEMA_UPDATE[Schema Updates]
-        ROLLBACK[Rollback Operations]
-    end
-    
-    MIG_MGR --> MIG_RUNNER
-    MIG_MGR --> MIG_VALIDATOR
-    MIG_MGR --> MIG_TRACKER
-    MIG_FILES --> MIG_RUNNER
-    MIG_TRACKER --> MIG_TABLE
-    MIG_RUNNER --> SCHEMA_CREATE
-    MIG_RUNNER --> SCHEMA_UPDATE
-    MIG_RUNNER --> ROLLBACK
-```
-
 ### Database Schema
 
-```sql
--- Migration tracking table (created first)
-CREATE TABLE IF NOT EXISTS schema_migrations (
-  version VARCHAR(255) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  filename VARCHAR(255) NOT NULL,
-  checksum VARCHAR(64) NOT NULL,
-  applied_at TIMESTAMP DEFAULT NOW(),
-  execution_time_ms INTEGER,
-  success BOOLEAN DEFAULT TRUE
-);
+The system works with existing database tables created by migrations:
 
--- Migration 001_initial_schema.sql
+```sql
+-- Identity Records (hashed PII only)
 CREATE TABLE identity_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   external_ref TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  dob DATE NOT NULL,
   dob_hash TEXT NOT NULL,
   ssn4_hash TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_identity_records_ref ON identity_records (external_ref);
-CREATE INDEX idx_identity_records_combo ON identity_records (dob, ssn4_hash);
-
--- Migration 002_contact_information.sql
+-- Contact Information
 CREATE TABLE contact_information (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_ref TEXT NOT NULL REFERENCES identity_records(external_ref) ON DELETE CASCADE,
-  street TEXT NOT NULL,
-  unit TEXT,
+  external_ref TEXT UNIQUE NOT NULL,
+  street_address TEXT NOT NULL,
   city TEXT NOT NULL,
   state TEXT NOT NULL,
   zip_code TEXT NOT NULL,
+  unit_number TEXT,
   email TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  FOREIGN KEY (external_ref) REFERENCES identity_records(external_ref)
 );
 
-CREATE INDEX idx_contact_info_ref ON contact_information (external_ref);
-
--- Migration 003_financial_data.sql
+-- Financial Data
 CREATE TABLE financial_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_ref TEXT NOT NULL REFERENCES identity_records(external_ref) ON DELETE CASCADE,
-  monthly_income INTEGER NOT NULL,
-  job_tenure_months INTEGER,
-  employment_status TEXT DEFAULT 'employed',
-  job_change_reason TEXT,
+  external_ref TEXT UNIQUE NOT NULL,
+  monthly_income DECIMAL(10,2) NOT NULL,
+  job_tenure_months INTEGER NOT NULL,
+  employment_status TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  FOREIGN KEY (external_ref) REFERENCES identity_records(external_ref)
 );
 
-CREATE INDEX idx_financial_data_ref ON financial_data (external_ref);
-
--- Migration 004_application_data.sql
+-- Application Data
 CREATE TABLE application_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_ref TEXT NOT NULL REFERENCES identity_records(external_ref) ON DELETE CASCADE,
-  application_job_tenure INTEGER,
-  initial_address TEXT,
-  complete_address JSONB,
-  first_attempt JSONB,
-  second_attempt JSONB,
+  external_ref TEXT UNIQUE NOT NULL,
+  application_id TEXT,
+  application_date TIMESTAMP,
+  status TEXT DEFAULT 'pending',
+  notes TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  FOREIGN KEY (external_ref) REFERENCES identity_records(external_ref)
 );
 
-CREATE INDEX idx_application_data_ref ON application_data (external_ref);
-
--- Migration 005_test_scenarios.sql
+-- Test Scenarios Metadata
 CREATE TABLE test_scenarios (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   scenario_name TEXT UNIQUE NOT NULL,
   description TEXT NOT NULL,
-  expected_flow TEXT[] NOT NULL,
   expected_outcome TEXT NOT NULL,
-  failure_reason TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE INDEX idx_test_scenarios_name ON test_scenarios (scenario_name);
-
--- Migration 006_system_configuration.sql
-CREATE TABLE system_variables (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  variable_name TEXT UNIQUE NOT NULL,
-  variable_value JSONB NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE response_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  template_name TEXT UNIQUE NOT NULL,
-  template_content TEXT NOT NULL,
-  description TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Migration 007_audit_tables.sql
-CREATE TABLE seeding_audit (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  operation_type VARCHAR(20) NOT NULL, -- 'seed', 'clean', 'reset'
-  environment VARCHAR(20) NOT NULL,    -- 'test', 'production'
-  records_affected INTEGER NOT NULL,
-  tables_affected TEXT[] NOT NULL,
-  operation_timestamp TIMESTAMP DEFAULT NOW(),
-  operation_details JSONB
+  scenario_type TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
-### Docker Compose Configuration
+### Data Flow
 
+1. **Input**: Mock test data from `tests/mock_test_data.json`
+2. **Processing**: Parse scenarios, validate data, hash PII
+3. **Storage**: Upsert records across all tables with foreign key relationships
+4. **Validation**: Verify data integrity and completeness
+
+## Docker Environment Management
+
+### Environment Separation Strategy
+
+Instead of multiple database URLs, use Docker Compose environment management:
+
+**Development Environment** (`docker-compose.dev.yml`):
 ```yaml
-# Updated docker-compose.yml structure
 services:
-  # Test Database
-  postgres-test:
-    image: pgvector/pgvector:pg15
-    container_name: ${COMPOSE_PROJECT_NAME:-multi-agent-ai}-postgres-test
+  postgres:
     environment:
-      POSTGRES_DB: ${POSTGRES_TEST_DB:-agents_app_test}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_TEST_PORT:-5433}:5432"
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-    networks:
-      - app-network
-
-  # Production Database  
-  postgres-prod:
-    image: pgvector/pgvector:pg15
-    container_name: ${COMPOSE_PROJECT_NAME:-multi-agent-ai}-postgres-prod
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-agents_app_prod}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-    networks:
-      - app-network
-
-volumes:
-  postgres_test_data:
-  postgres_prod_data:
+      POSTGRES_DB: multiagent_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password
 ```
+
+**Production Environment** (`docker-compose.yml`):
+```yaml
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: multiagent_prod
+      POSTGRES_USER: prod_user
+      POSTGRES_PASSWORD: prod_password
+```
+
+### Connection Management
+
+**Single DATABASE_URL Pattern**:
+```bash
+# Development
+DATABASE_URL=postgresql://dev_user:dev_password@localhost:5432/multiagent_dev
+
+# Production  
+DATABASE_URL=postgresql://prod_user:prod_password@localhost:5432/multiagent_prod
+```
+
+**Environment Detection**:
+- Extract database name from DATABASE_URL
+- Validate against expected patterns (dev/test vs prod)
+- Prevent accidental production seeding
 
 ## Error Handling
 
 ### Error Categories
 
-1. **Configuration Errors**
-   - Missing environment variables
-   - Invalid database URLs
-   - Missing salt values
+1. **Configuration Errors**: Missing environment variables, invalid database URLs
+2. **Connection Errors**: Database unavailable, authentication failures
+3. **Data Errors**: Invalid mock data, missing required fields
+4. **Security Errors**: Hashing failures, PII validation errors
+5. **Database Errors**: Schema validation, constraint violations
 
-2. **Data Validation Errors**
-   - Invalid SSN format
-   - Invalid date format
-   - Missing required fields in mock data
-
-3. **Database Errors**
-   - Connection failures
-   - Schema validation failures
-   - Constraint violations
-
-4. **Security Errors**
-   - Attempting to seed production with test data
-   - Hash generation failures
-   - PII exposure in logs
-
-### Error Handling Strategy
+### Error Recovery Strategies
 
 ```typescript
-class SeedingError extends Error {
-  constructor(
-    message: string,
-    public category: 'config' | 'validation' | 'database' | 'security',
-    public recoverable: boolean = false,
-    public details?: any
-  ) {
-    super(message)
-  }
+interface ErrorHandler {
+  handleConfigurationError(error: ConfigurationError): void
+  handleConnectionError(error: ConnectionError): Promise<boolean>
+  handleDataError(error: DataError): void
+  handleSecurityError(error: SecurityError): void
+  handleDatabaseError(error: DatabaseError): Promise<boolean>
 }
 
-class ErrorHandler {
-  handleError(error: SeedingError): void {
-    // Log error without exposing PII
-    this.logError(this.sanitizeError(error))
-    
-    if (!error.recoverable) {
-      process.exit(1)
-    }
-  }
-  
-  private sanitizeError(error: SeedingError): SeedingError {
-    // Remove any potential PII from error messages
-    const sanitizedMessage = error.message
-      .replace(/\d{4}-\d{2}-\d{2}/g, '****-**-**')
-      .replace(/\d{4}(?=\D|$)/g, '****')
-    
-    return new SeedingError(
-      sanitizedMessage,
-      error.category,
-      error.recoverable,
-      this.sanitizeDetails(error.details)
-    )
-  }
+class SeedingErrorHandler implements ErrorHandler {
+  // Retry logic for transient errors
+  // Fail-fast for security violations
+  // Detailed logging without PII exposure
+  // Graceful degradation where possible
 }
 ```
+
+### Production Safety Measures
+
+1. **Database Name Validation**: Refuse to seed production-named databases with test data
+2. **Confirmation Prompts**: Require explicit confirmation for production operations
+3. **Dry Run Mode**: Test operations without actual database changes
+4. **Audit Logging**: Track all seeding operations with timestamps and results
 
 ## Testing Strategy
 
-### Unit Tests
+### Unit Testing
 
-1. **MockDataParser Tests**
-   - Parse valid mock data scenarios
-   - Handle malformed JSON
-   - Extract identity data correctly
-   - Process special case scenarios
+- **Configuration Management**: Environment variable handling, validation logic
+- **Data Processing**: Mock data parsing, validation, transformation
+- **Security**: Hashing functions, PII handling, input validation
+- **Database Operations**: Individual seeding methods, error handling
 
-2. **IdentityHasher Tests**
-   - Hash SSN consistently
-   - Validate input formats
-   - Handle invalid inputs gracefully
-   - Use correct salt values
+### Integration Testing
 
-3. **DatabaseValidator Tests**
-   - Validate database connections
-   - Check schema completeness
-   - Detect missing tables/indexes
-   - Environment validation
-
-### Integration Tests
-
-1. **End-to-End Seeding**
-   - Seed complete mock data set
-   - Verify data integrity
-   - Test update vs insert logic
-   - Validate hash consistency
-
-2. **Database Environment Tests**
-   - Test database separation
-   - Validate environment detection
-   - Test production protection
-   - Verify connection routing
-
-3. **CLI Interface Tests**
-   - Test all command options
-   - Validate error handling
-   - Test environment targeting
-   - Verify output formatting
+- **End-to-End Seeding**: Complete workflow from JSON to database
+- **Docker Environment**: Test with actual Docker Compose setup
+- **Data Integrity**: Verify foreign key relationships, data consistency
+- **Error Scenarios**: Test failure modes and recovery
 
 ### Test Data Management
 
-```typescript
-// Test utilities for seeding tests
-class TestDatabaseManager {
-  async createTestDatabase(): Promise<string> {
-    // Create isolated test database
-  }
-  
-  async cleanupTestDatabase(dbUrl: string): Promise<void> {
-    // Clean up after tests
-  }
-  
-  async seedMinimalData(dbUrl: string): Promise<void> {
-    // Seed minimal test data
-  }
-}
-```
-
-## Security Considerations
-
-### PII Protection
-
-1. **Hash Generation**
-   - Use SHA-256 with environment-specific salts
-   - Never log raw SSN or DOB values
-   - Validate input format before hashing
-
-2. **Logging Security**
-   - Redact PII in all log messages
-   - Use structured logging with sanitization
-   - Audit all seeding operations
-
-3. **Environment Isolation**
-   - Prevent test data in production
-   - Validate database environment before seeding
-   - Use separate database instances
-
-### Access Control
-
-```typescript
-class SecurityValidator {
-  validateEnvironmentSafety(
-    databaseUrl: string, 
-    operation: 'seed' | 'clean' | 'reset'
-  ): boolean {
-    const isProduction = this.isProductionDatabase(databaseUrl)
-    const isTestData = operation === 'seed'
-    
-    if (isProduction && isTestData) {
-      throw new SeedingError(
-        'Cannot seed test data to production database',
-        'security',
-        false
-      )
-    }
-    
-    return true
-  }
-}
-```
+- **Mock Scenarios**: Use existing `tests/mock_test_data.json`
+- **Test Database**: Separate database for testing (multiagent_test)
+- **Data Cleanup**: Automated cleanup between test runs
+- **Scenario Coverage**: Test all scenario types from mock data
 
 ## Performance Considerations
 
-### Batch Processing
+### Optimization Strategies
 
-```typescript
-class BatchSeeder {
-  private readonly BATCH_SIZE = 100
-  
-  async seedInBatches(records: ProcessedIdentityRecord[]): Promise<SeedResult> {
-    const batches = this.createBatches(records, this.BATCH_SIZE)
-    const results: SeedResult[] = []
-    
-    for (const batch of batches) {
-      const result = await this.seedBatch(batch)
-      results.push(result)
-    }
-    
-    return this.aggregateResults(results)
-  }
-}
-```
+1. **Batch Processing**: Process multiple records in single transactions
+2. **Connection Pooling**: Reuse database connections efficiently
+3. **Upsert Operations**: Minimize database round trips
+4. **Parallel Processing**: Process independent tables concurrently
+5. **Memory Management**: Stream large datasets to avoid memory issues
 
-### Connection Management
+### Monitoring and Metrics
 
-- Use connection pooling for database operations
-- Implement connection timeout and retry logic
-- Close connections properly after operations
-- Monitor connection usage during seeding
+- **Seeding Duration**: Track time for complete seeding operations
+- **Record Counts**: Monitor inserted/updated record statistics
+- **Error Rates**: Track and alert on seeding failures
+- **Database Performance**: Monitor connection pool usage and query performance
 
-### Migration File Structure
+## Security Implementation
 
-```
-migrations/
-├── 001_initial_schema.sql
-├── 002_contact_information.sql
-├── 003_financial_data.sql
-├── 004_application_data.sql
-├── 005_test_scenarios.sql
-├── 006_system_configuration.sql
-├── 007_audit_tables.sql
-└── rollbacks/
-    ├── 001_initial_schema_rollback.sql
-    ├── 002_contact_information_rollback.sql
-    ├── 003_financial_data_rollback.sql
-    ├── 004_application_data_rollback.sql
-    ├── 005_test_scenarios_rollback.sql
-    ├── 006_system_configuration_rollback.sql
-    └── 007_audit_tables_rollback.sql
-```
+### PII Protection
 
-### Migration File Format
+1. **Hashing at Ingress**: Hash PII immediately upon processing
+2. **No Raw Storage**: Never store unhashed SSN or DOB
+3. **Logging Redaction**: Ensure no PII appears in logs or error messages
+4. **Environment Isolation**: Separate salts for different environments
 
-```sql
--- Migration: 001_initial_schema
--- Description: Create initial identity_records table
--- Author: System
--- Date: 2024-01-01
+### Access Control
 
--- UP Migration
-CREATE TABLE identity_records (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_ref TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  dob DATE NOT NULL,
-  dob_hash TEXT NOT NULL,
-  ssn4_hash TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
+1. **Database Permissions**: Minimal required permissions for seeding operations
+2. **Environment Variables**: Secure storage of salts and credentials
+3. **Audit Trail**: Log all seeding operations without exposing PII
+4. **Production Safeguards**: Multiple validation layers for production operations
 
--- Rollback instructions in separate file: rollbacks/001_initial_schema_rollback.sql
-```
-
-## CLI Interface Design
-
-### Command Structure
-
-```bash
-# Migration commands
-npm run migrate:up -- --env=test
-npm run migrate:down -- --env=test --version=003
-npm run migrate:status -- --env=test
-npm run migrate:create -- --name=add_new_field
-
-# Seed test database with mock data
-npm run seed:test
-
-# Seed specific environment
-npm run seed -- --env=test --confirm
-
-# Clean test data
-npm run seed:clean -- --env=test
-
-# Reset (clean + seed)
-npm run seed:reset -- --env=test
-
-# Validate database setup
-npm run seed:validate -- --env=test
-
-# Full setup (migrate + seed)
-npm run setup:test
-```
-
-### Command Implementation
-
-```typescript
-interface CLIOptions {
-  environment: 'test' | 'production'
-  confirm: boolean
-  dryRun: boolean
-  verbose: boolean
-  batchSize?: number
-  version?: string
-  name?: string
-}
-
-class MigrationCLI {
-  async runMigrations(options: CLIOptions): Promise<void> {
-    const migrationManager = new MigrationManager(options.environment)
-    
-    // Validate environment and database connectivity
-    await this.validateEnvironment(options.environment)
-    
-    // Run pending migrations
-    const result = await migrationManager.runMigrations(options.environment)
-    
-    // Report results
-    this.reportMigrationResults(result)
-  }
-  
-  async rollbackMigration(options: CLIOptions): Promise<void> {
-    if (!options.version) {
-      throw new Error('Version required for rollback')
-    }
-    
-    const migrationManager = new MigrationManager(options.environment)
-    const result = await migrationManager.rollbackMigration(options.version)
-    
-    this.reportMigrationResults(result)
-  }
-  
-  async createMigration(options: CLIOptions): Promise<void> {
-    if (!options.name) {
-      throw new Error('Migration name required')
-    }
-    
-    const migrationManager = new MigrationManager(options.environment)
-    const filename = await migrationManager.createMigration(options.name)
-    
-    console.log(`Created migration: ${filename}`)
-  }
-  
-  async getMigrationStatus(options: CLIOptions): Promise<void> {
-    const migrationManager = new MigrationManager(options.environment)
-    const currentVersion = await migrationManager.getCurrentVersion()
-    const pending = await migrationManager.getPendingMigrations()
-    
-    console.log(`Current version: ${currentVersion}`)
-    console.log(`Pending migrations: ${pending.length}`)
-    pending.forEach(m => console.log(`  - ${m.version}: ${m.name}`))
-  }
-}
-
-class SeedCLI {
-  async executeSeed(options: CLIOptions): Promise<void> {
-    // Ensure migrations are up to date first
-    const migrationCLI = new MigrationCLI()
-    await migrationCLI.runMigrations(options)
-    
-    // Validate options and environment
-    await this.validateEnvironment(options.environment)
-    
-    // Execute seeding with progress reporting
-    const seeder = new DatabaseSeeder(options.environment)
-    const result = await seeder.seedAllTables(await this.loadProcessedData())
-    
-    // Handle errors and provide user feedback
-    this.reportSeedResults(result)
-  }
-  
-  async executeFullSetup(options: CLIOptions): Promise<void> {
-    console.log('Running full database setup...')
-    
-    // Step 1: Run migrations
-    console.log('1. Running database migrations...')
-    const migrationCLI = new MigrationCLI()
-    await migrationCLI.runMigrations(options)
-    
-    // Step 2: Seed data
-    console.log('2. Seeding test data...')
-    await this.executeSeed(options)
-    
-    console.log('Database setup complete!')
-  }
-}
-```
-
-This design provides a comprehensive, secure, and maintainable solution for database seeding that integrates with the existing mock test data structure and supports the required database separation.
+This design provides a clean, maintainable, and secure foundation for the database seeding system while leveraging Docker's environment management capabilities for simplified configuration.
