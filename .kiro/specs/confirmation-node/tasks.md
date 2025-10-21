@@ -1,0 +1,184 @@
+# Confirmation Node Implementation Plan
+
+- [ ] 1. Set up basic project structure for testing
+  - Create confirmation node directory structure for LangGraph implementation
+  - Set up package.json with testing dependencies (jest, @types/jest, ts-jest)
+  - Create TypeScript configuration and test setup
+  - Define basic test utilities and mock data structures
+  - _Requirements: R6_
+
+- [ ] 2. Write unit tests for voice formatting utilities (TDD approach)
+  - [ ] 2.1 Create tests for address formatting function
+    - [ ] 2.1.1 Test basic address formatting (street, city, state, zip)
+    - [ ] 2.1.2 Test address with unit number formatting
+    - [ ] 2.1.3 Test street number conversion to words ("123" → "one twenty-three")
+    - [ ] 2.1.4 Test ZIP code digit separation ("80202" → "eight zero two zero two")
+    - [ ] 2.1.5 Test edge cases (missing components, special characters)
+  - [ ] 2.2 Write tests for email formatting function
+    - [ ] 2.2.1 Test basic email letter-by-letter formatting
+    - [ ] 2.2.2 Test email with dots and @ symbol conversion
+    - [ ] 2.2.3 Test missing email handling ("no email address provided")
+    - [ ] 2.2.4 Test special characters in email addresses
+  - [ ] 2.3 Implement tests for money formatting function
+    - [ ] 2.3.1 Test small amounts (under $1,000)
+    - [ ] 2.3.2 Test thousands formatting ($1,000 - $999,999)
+    - [ ] 2.3.3 Test large amounts (millions)
+    - [ ] 2.3.4 Test exact thousand amounts ($50,000)
+  - [ ] 2.4 Create tests for number-to-words conversion utility
+    - [ ] 2.4.1 Test single digits (0-9)
+    - [ ] 2.4.2 Test teens (10-19)
+    - [ ] 2.4.3 Test tens (20, 30, 40, etc.)
+    - [ ] 2.4.4 Test hundreds (100-999)
+    - [ ] 2.4.5 Test thousands (1000-9999)
+  - _Requirements: R1, R6_
+
+- [ ] 3. Write unit tests for summary generation (TDD approach)
+  - [ ] 3.1 Create tests for secure summary generation function
+    - [ ] 3.1.1 Test complete data summary generation
+    - [ ] 3.1.2 Test summary with missing email
+    - [ ] 3.1.3 Test PII redaction in identity confirmation
+    - [ ] 3.1.4 Test proper ordering (identity, contact, financial)
+  - [ ] 3.2 Write tests for prerequisite validation
+    - [ ] 3.2.1 Test validation with complete prerequisites
+    - [ ] 3.2.2 Test validation with missing identity verification
+    - [ ] 3.2.3 Test validation with missing contact information
+    - [ ] 3.2.4 Test validation with missing financial information
+  - [ ] 3.3 Implement tests for TTS summary formatting
+    - [ ] 3.3.1 Test natural speech pattern generation
+    - [ ] 3.3.2 Test pause placement between components
+    - [ ] 3.3.3 Test final confirmation prompt generation
+  - _Requirements: R1, R3, R6_
+
+- [ ] 4. Write unit tests for confirmation response parsing (TDD approach)
+  - [ ] 4.1 Create tests for affirmative response detection
+    - [ ] 4.1.1 Test "yes" variations ("yes", "correct", "that's right")
+    - [ ] 4.1.2 Test case insensitive matching
+    - [ ] 4.1.3 Test partial matches in longer responses
+  - [ ] 4.2 Write tests for negative response detection
+    - [ ] 4.2.1 Test "no" variations ("no", "incorrect", "that's wrong")
+    - [ ] 4.2.2 Test rejection with explanation handling
+  - [ ] 4.3 Implement tests for unclear response handling
+    - [ ] 4.3.1 Test ambiguous responses ("maybe", "I think so")
+    - [ ] 4.3.2 Test empty or unintelligible responses
+    - [ ] 4.3.3 Test clarification request generation
+  - _Requirements: R2, R6_
+
+- [ ] 5. Write integration tests for state management (TDD approach)
+  - [ ] 5.1 Create tests for successful confirmation flow
+    - [ ] 5.1.1 Test state update on confirmation (verificationComplete = true)
+    - [ ] 5.1.2 Test completion timestamp setting
+    - [ ] 5.1.3 Test needs flags reset on completion
+    - [ ] 5.1.4 Test routing to END node
+  - [ ] 5.2 Write tests for rejection and correction flow
+    - [ ] 5.2.1 Test state update on rejection (verificationComplete = false)
+    - [ ] 5.2.2 Test needs.contact = true for correction routing
+    - [ ] 5.2.3 Test routing to contact node
+  - [ ] 5.3 Implement tests for unclear response retry flow
+    - [ ] 5.3.1 Test needs.confirm = true for retry
+    - [ ] 5.3.2 Test routing back to confirmation node
+    - [ ] 5.3.3 Test clarification attempt tracking
+  - _Requirements: R3, R5, R6_
+
+- [ ] 6. Write security and PII protection tests (TDD approach)
+  - [ ] 6.1 Create tests for PII redaction in summaries
+    - [ ] 6.1.1 Test no raw DOB appears in confirmation summary
+    - [ ] 6.1.2 Test no raw SSN appears in confirmation summary
+    - [ ] 6.1.3 Test email masking in telemetry logs
+    - [ ] 6.1.4 Test address component redaction in logs
+  - [ ] 6.2 Write tests for secure logging and telemetry
+    - [ ] 6.2.1 Test event structure with proper session tracking
+    - [ ] 6.2.2 Test PII redaction in all log events
+    - [ ] 6.2.3 Test audit trail generation for confirmation decisions
+  - [ ] 6.3 Implement tests for fail-closed error handling
+    - [ ] 6.3.1 Test system error routing to terminate
+    - [ ] 6.3.2 Test no stack traces in user-facing errors
+    - [ ] 6.3.3 Test graceful failure on missing prerequisites
+  - _Requirements: R4, R6_
+
+- [ ] 7. Write end-to-end integration tests (TDD approach)
+  - [ ] 7.1 Create tests for complete confirmation scenarios
+    - [ ] 7.1.1 Test Michael Thompson successful confirmation scenario
+    - [ ] 7.1.2 Test Lisa Chen rejection and correction scenario
+    - [ ] 7.1.3 Test Robert Johnson unclear response scenario
+    - [ ] 7.1.4 Test Dorothy Wilson missing email scenario
+  - [ ] 7.2 Write tests for complex formatting scenarios
+    - [ ] 7.2.1 Test Carlos Rodriguez complex address scenario
+    - [ ] 7.2.2 Test Amanda Foster income formatting scenario
+    - [ ] 7.2.3 Test voice formatting edge cases scenario
+  - [ ] 7.3 Implement tests for performance and concurrency
+    - [ ] 7.3.1 Test summary generation performance (<2000ms)
+    - [ ] 7.3.2 Test concurrent session isolation
+    - [ ] 7.3.3 Test memory usage during summary generation
+  - _Requirements: R6_
+
+- [ ] 8. Implement voice formatting utilities (driven by tests)
+  - Create address formatting function with TTS optimization
+  - Implement email letter-by-letter formatting function
+  - Add money amount to natural speech conversion
+  - Create number-to-words conversion utility
+  - Add ZIP code digit separation formatting
+  - _Requirements: R1_
+
+- [ ] 9. Implement summary generation logic (driven by tests)
+  - Create secure summary generation function with PII redaction
+  - Implement prerequisite validation logic
+  - Add TTS-optimized summary formatting
+  - Create natural speech pattern generation
+  - Add final confirmation prompt generation
+  - _Requirements: R1, R3, R4_
+
+- [ ] 10. Implement confirmation response parsing (driven by tests)
+  - Create affirmative response detection logic
+  - Implement negative response detection logic
+  - Add unclear response handling with clarification
+  - Create response confidence scoring
+  - Add case-insensitive matching logic
+  - _Requirements: R2_
+
+- [ ] 11. Implement state management and routing (driven by tests)
+  - Create confirmation node state update logic
+  - Implement completion status management
+  - Add routing logic for confirmation/rejection/retry
+  - Create timestamp and metadata handling
+  - Add needs flags management for proper routing
+  - _Requirements: R3, R5_
+
+- [ ] 12. Add security and logging implementation (driven by tests)
+  - Create PII redaction utilities for summaries and logs
+  - Implement secure telemetry event generation
+  - Add audit trail logging for confirmation decisions
+  - Create fail-closed error handling logic
+  - Add session tracking and correlation
+  - _Requirements: R4_
+
+- [ ] 13. Create confirmation node foundation (driven by tests)
+  - Create confirmation node file with LangGraph RunnableLambda integration
+  - Implement basic node interface with state management
+  - Set up input/output type definitions for confirmation
+  - Create conversation state integration
+  - Add error boundary and timeout handling
+  - _Requirements: R5_
+
+- [ ] 14. Integrate core confirmation logic (driven by tests)
+  - Combine prerequisite validation, summary generation, and response parsing
+  - Add proper error handling with fail-closed behavior
+  - Implement complete routing logic for all confirmation outcomes
+  - Add LangGraph integration with proper state annotations and reducers
+  - Create performance monitoring and metrics collection
+  - _Requirements: R1, R2, R3, R5_
+
+- [ ] 15. Final integration and deployment preparation
+  - Create LangGraph graph configuration with confirmation node integration
+  - Add environment configuration management
+  - Implement monitoring and health check endpoints
+  - Create deployment scripts and Docker configuration
+  - Add performance benchmarking and optimization
+  - _Requirements: R5, R6_
+
+- [ ] 16. Validation and documentation
+  - Validate all 12 test scenarios from requirements document
+  - Create API documentation and integration guides
+  - Add voice formatting examples and TTS guidelines
+  - Verify compliance with security requirements and PII handling
+  - Create troubleshooting guides and operational documentation
+  - _Requirements: R6_

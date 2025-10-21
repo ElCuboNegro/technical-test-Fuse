@@ -1,0 +1,30 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Monitors all TypeScript, JavaScript, and configuration files for changes and triggers documentation updates in README.md or /docs folder when source code is modified",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.js",
+      "**/*.tsx",
+      "**/*.jsx",
+      "**/*.json",
+      "**/*.md",
+      "**/*.yml",
+      "**/*.yaml",
+      "package.json",
+      "tsconfig.json",
+      "langgraph.json",
+      "docker-compose*.yml",
+      "eslint.config.js",
+      "jest.config*.js",
+      "turbo.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source files have been modified in this TypeScript/JavaScript project. Please review the changes and update the documentation accordingly. If there is a /docs folder, update relevant documentation there. Otherwise, update the README.md file. Focus on:\n\n1. API changes or new endpoints\n2. New agent implementations or modifications\n3. Configuration changes\n4. New features or capabilities\n5. Updated dependencies or build processes\n6. Changes to the project structure\n\nEnsure the documentation reflects the current state of the codebase and maintains consistency with the established patterns for this multi-agent AI application built with LangGraph, Next.js, and TypeScript."
+  }
+}

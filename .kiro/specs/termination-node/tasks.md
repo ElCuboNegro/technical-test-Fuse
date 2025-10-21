@@ -1,0 +1,202 @@
+# Termination Node Implementation Plan
+
+- [ ] 1. Set up basic project structure for testing
+  - Create termination node directory structure for LangGraph implementation
+  - Set up package.json with testing dependencies (jest, @types/jest, ts-jest)
+  - Create TypeScript configuration and test setup
+  - Define basic test utilities and mock data structures
+  - _Requirements: R6_
+
+- [ ] 2. Write unit tests for reason code normalization (TDD approach)
+  - [ ] 2.1 Create tests for canonical reason mapping
+    - [ ] 2.1.1 Test identity-related error code mapping (DOB_MISMATCH → IDENTITY_FAILURE)
+    - [ ] 2.1.2 Test system error code mapping (DATABASE_ERROR → SYSTEM_ERROR)
+    - [ ] 2.1.3 Test timeout error code mapping (SESSION_TIMEOUT → TIMEOUT)
+    - [ ] 2.1.4 Test rate limiting code mapping (TOO_MANY_ATTEMPTS → RATE_LIMITED)
+    - [ ] 2.1.5 Test user action code mapping (USER_DISCONNECT → USER_ABORT)
+  - [ ] 2.2 Write tests for reason classification logic
+    - [ ] 2.2.1 Test explicit error code classification
+    - [ ] 2.2.2 Test attempt pattern classification (identity >= 2 attempts)
+    - [ ] 2.2.3 Test session timeout detection
+    - [ ] 2.2.4 Test unknown error fallback handling
+  - [ ] 2.3 Implement tests for edge cases in normalization
+    - [ ] 2.3.1 Test missing error codes
+    - [ ] 2.3.2 Test invalid error codes
+    - [ ] 2.3.3 Test null/undefined state handling
+  - _Requirements: R2, R6_
+
+- [ ] 3. Write unit tests for script selection and delivery (TDD approach)
+  - [ ] 3.1 Create tests for script selection mapping
+    - [ ] 3.1.1 Test identity failure script selection (exact scope-approved script)
+    - [ ] 3.1.2 Test system error script selection
+    - [ ] 3.1.3 Test timeout script selection
+    - [ ] 3.1.4 Test rate limited script selection
+    - [ ] 3.1.5 Test user abort script selection
+    - [ ] 3.1.6 Test incomplete data script selection
+    - [ ] 3.1.7 Test unknown error fallback script selection
+  - [ ] 3.2 Write tests for script validation
+    - [ ] 3.2.1 Test script exists for all canonical reasons
+    - [ ] 3.2.2 Test fallback behavior for missing scripts
+    - [ ] 3.2.3 Test script content validation (professional tone)
+  - [ ] 3.3 Implement tests for script delivery
+    - [ ] 3.3.1 Test exact verbatim delivery (no modifications)
+    - [ ] 3.3.2 Test script selection performance (<100ms)
+    - [ ] 3.3.3 Test script module isolation
+  - _Requirements: R1, R6_
+
+- [ ] 4. Write unit tests for idempotency and state management (TDD approach)
+  - [ ] 4.1 Create tests for idempotency guard
+    - [ ] 4.1.1 Test detection of already terminated state
+    - [ ] 4.1.2 Test no-op behavior on re-invocation
+    - [ ] 4.1.3 Test state preservation during idempotent calls
+  - [ ] 4.2 Write tests for state cleanup policy
+    - [ ] 4.2.1 Test termination flag setting (conversationTerminated = true)
+    - [ ] 4.2.2 Test timestamp recording (terminatedAt)
+    - [ ] 4.2.3 Test needs flags clearing (all set to false)
+    - [ ] 4.2.4 Test transient error field clearing (lastError = null)
+    - [ ] 4.2.5 Test correction hints clearing
+    - [ ] 4.2.6 Test collected data preservation for audit
+  - [ ] 4.3 Implement tests for state validation
+    - [ ] 4.3.1 Test clean terminal state verification
+    - [ ] 4.3.2 Test audit data preservation
+    - [ ] 4.3.3 Test state consistency after cleanup
+  - _Requirements: R4, R5, R6_
+
+- [ ] 5. Write unit tests for structured telemetry (TDD approach)
+  - [ ] 5.1 Create tests for telemetry event structure
+    - [ ] 5.1.1 Test standard envelope fields (node, session_id, user_id, event_type)
+    - [ ] 5.1.2 Test termination-specific fields (reason, terminated_at, duration)
+    - [ ] 5.1.3 Test attempts summary generation (all node attempts)
+    - [ ] 5.1.4 Test metadata inclusion (applicant_name, scenario_name)
+    - [ ] 5.1.5 Test explicit redactions structure (dob, ssn, email, address all null)
+  - [ ] 5.2 Write tests for PII redaction in telemetry
+    - [ ] 5.2.1 Test no raw DOB in telemetry events
+    - [ ] 5.2.2 Test no raw SSN in telemetry events
+    - [ ] 5.2.3 Test no email addresses in telemetry events
+    - [ ] 5.2.4 Test no address data in telemetry events
+  - [ ] 5.3 Implement tests for telemetry consistency
+    - [ ] 5.3.1 Test event envelope matches system-wide pattern
+    - [ ] 5.3.2 Test session correlation preservation
+    - [ ] 5.3.3 Test timestamp accuracy and format
+  - _Requirements: R3, R6_
+
+- [ ] 6. Write unit tests for metrics and observability (TDD approach)
+  - [ ] 6.1 Create tests for termination metrics
+    - [ ] 6.1.1 Test total termination counter increment
+    - [ ] 6.1.2 Test reason-specific counter increments
+    - [ ] 6.1.3 Test execution time histogram recording
+    - [ ] 6.1.4 Test internal error counter increment
+  - [ ] 6.2 Write tests for conversation quality metrics
+    - [ ] 6.2.1 Test conversation duration calculation
+    - [ ] 6.2.2 Test nodes visited counting
+    - [ ] 6.2.3 Test progress tracking before termination
+  - [ ] 6.3 Implement tests for metrics reliability
+    - [ ] 6.3.1 Test metrics emission on success
+    - [ ] 6.3.2 Test metrics emission on error
+    - [ ] 6.3.3 Test metrics performance impact
+  - _Requirements: R6_
+
+- [ ] 7. Write integration tests for routing and LangGraph (TDD approach)
+  - [ ] 7.1 Create tests for routing contract
+    - [ ] 7.1.1 Test termination always routes to END
+    - [ ] 7.1.2 Test routing from identity node failures
+    - [ ] 7.1.3 Test routing from contact node errors
+    - [ ] 7.1.4 Test routing from financial node errors
+    - [ ] 7.1.5 Test routing from confirmation node errors
+  - [ ] 7.2 Write tests for global error handling
+    - [ ] 7.2.1 Test onError routing to terminate
+    - [ ] 7.2.2 Test error state propagation
+    - [ ] 7.2.3 Test termination reuse in error scenarios
+  - [ ] 7.3 Implement tests for LangGraph integration
+    - [ ] 7.3.1 Test state annotations and reducers
+    - [ ] 7.3.2 Test checkpointer persistence
+    - [ ] 7.3.3 Test conditional edge behavior
+  - _Requirements: R5, R6_
+
+- [ ] 8. Write end-to-end integration tests (TDD approach)
+  - [ ] 8.1 Create tests for complete termination scenarios
+    - [ ] 8.1.1 Test Jennifer Martinez identity failure scenario
+    - [ ] 8.1.2 Test system error termination scenario
+    - [ ] 8.1.3 Test timeout termination scenario
+    - [ ] 8.1.4 Test rate limited termination scenario
+  - [ ] 8.2 Write tests for professional communication
+    - [ ] 8.2.1 Test empathetic tone in all termination scripts
+    - [ ] 8.2.2 Test no technical details exposed to users
+    - [ ] 8.2.3 Test consistent professional standard
+  - [ ] 8.3 Implement tests for audit compliance
+    - [ ] 8.3.1 Test complete audit trail generation
+    - [ ] 8.3.2 Test compliance with regulatory requirements
+    - [ ] 8.3.3 Test session correlation throughout termination
+  - _Requirements: R6_
+
+- [ ] 9. Implement reason code normalization (driven by tests)
+  - Create canonical reason mapping with ERROR_CODE_MAPPING
+  - Implement normalizeTerminationReason function
+  - Add session timeout detection logic
+  - Create attempt pattern classification
+  - Add fallback handling for unknown errors
+  - _Requirements: R2_
+
+- [ ] 10. Implement script selection module (driven by tests)
+  - Create dedicated termination-scripts.ts module
+  - Implement APPROVED_TERMINATION_SCRIPTS with exact scope scripts
+  - Add selectTerminationScript function with validation
+  - Create script existence validation
+  - Add fallback script selection logic
+  - _Requirements: R1_
+
+- [ ] 11. Implement state management and cleanup (driven by tests)
+  - Create isAlreadyTerminated idempotency guard
+  - Implement cleanupConversationState with explicit policy
+  - Add transient error field clearing logic
+  - Create collected data preservation logic
+  - Add needs flags management
+  - _Requirements: R4, R5_
+
+- [ ] 12. Implement structured telemetry system (driven by tests)
+  - Create TerminationTelemetryEvent type with standard envelope
+  - Implement generateTerminationTelemetry function
+  - Add PII redaction logic for all telemetry
+  - Create attempts summary calculation
+  - Add session correlation preservation
+  - _Requirements: R3_
+
+- [ ] 13. Implement metrics and observability (driven by tests)
+  - Create metrics utility with incrementMetric function
+  - Implement termination counter metrics
+  - Add reason-specific metric tracking
+  - Create execution time histogram recording
+  - Add conversation quality metrics
+  - _Requirements: R6_
+
+- [ ] 14. Create termination node foundation (driven by tests)
+  - Create termination node file with LangGraph RunnableLambda integration
+  - Implement idempotency guard at node entry
+  - Set up error handling with fail-closed behavior
+  - Create node interface with proper input/output types
+  - Add timeout and performance monitoring
+  - _Requirements: R5_
+
+- [ ] 15. Integrate core termination logic (driven by tests)
+  - Combine reason normalization, script selection, and state cleanup
+  - Add structured telemetry emission with proper redaction
+  - Implement metrics collection throughout termination flow
+  - Add comprehensive error handling with professional fallbacks
+  - Create routing integration with proper END routing
+  - _Requirements: R1, R2, R3, R4, R5_
+
+- [ ] 16. Final integration and deployment preparation
+  - Create LangGraph graph configuration with termination routing
+  - Add global error handler integration with terminate routing
+  - Implement environment configuration management
+  - Create deployment scripts and Docker configuration
+  - Add monitoring and health check endpoints
+  - _Requirements: R5, R6_
+
+- [ ] 17. Validation and documentation
+  - Validate all 12 test scenarios from requirements document
+  - Create API documentation and integration guides
+  - Add termination script management documentation
+  - Verify compliance with audit and security requirements
+  - Create operational runbooks and troubleshooting guides
+  - _Requirements: R6_
