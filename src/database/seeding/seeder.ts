@@ -29,9 +29,9 @@ export class DatabaseSeeder implements IDatabaseSeeder {
   }
 
   /**
-   * Seed identity_records table
+   * Seed identity_records table with batch processing
    */
-  async seedIdentityRecords(scenarios: TestScenario[]): Promise<SeedingResult> {
+  async seedIdentityRecords(scenarios: TestScenario[], batchSize: number = 100): Promise<SeedingResult> {
     const result: SeedingResult = {
       tableName: 'identity_records',
       recordsProcessed: 0,
@@ -40,6 +40,19 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       errors: []
     };
 
+    // Process scenarios in batches
+    for (let i = 0; i < scenarios.length; i += batchSize) {
+      const batch = scenarios.slice(i, i + batchSize);
+      await this.processBatchIdentityRecords(batch, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of identity records
+   */
+  private async processBatchIdentityRecords(scenarios: TestScenario[], result: SeedingResult): Promise<void> {
     const client = await this.pool.connect();
 
     try {
@@ -92,7 +105,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       }
 
       await client.query('COMMIT');
-      console.log(`✓ Seeded ${result.recordsInserted} identity records (${result.recordsUpdated} updated)`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -100,14 +112,12 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     } finally {
       client.release();
     }
-
-    return result;
   }
 
   /**
-   * Seed contact_information table
+   * Seed contact_information table with batch processing
    */
-  async seedContactInformation(scenarios: TestScenario[]): Promise<SeedingResult> {
+  async seedContactInformation(scenarios: TestScenario[], batchSize: number = 100): Promise<SeedingResult> {
     const result: SeedingResult = {
       tableName: 'contact_information',
       recordsProcessed: 0,
@@ -116,6 +126,19 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       errors: []
     };
 
+    // Process scenarios in batches
+    for (let i = 0; i < scenarios.length; i += batchSize) {
+      const batch = scenarios.slice(i, i + batchSize);
+      await this.processBatchContactInformation(batch, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of contact information records
+   */
+  private async processBatchContactInformation(scenarios: TestScenario[], result: SeedingResult): Promise<void> {
     const client = await this.pool.connect();
 
     try {
@@ -166,7 +189,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       }
 
       await client.query('COMMIT');
-      console.log(`✓ Seeded ${result.recordsInserted} contact records (${result.recordsUpdated} updated)`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -174,14 +196,12 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     } finally {
       client.release();
     }
-
-    return result;
   }
 
   /**
-   * Seed financial_data table
+   * Seed financial_data table with batch processing
    */
-  async seedFinancialData(scenarios: TestScenario[]): Promise<SeedingResult> {
+  async seedFinancialData(scenarios: TestScenario[], batchSize: number = 100): Promise<SeedingResult> {
     const result: SeedingResult = {
       tableName: 'financial_data',
       recordsProcessed: 0,
@@ -190,6 +210,19 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       errors: []
     };
 
+    // Process scenarios in batches
+    for (let i = 0; i < scenarios.length; i += batchSize) {
+      const batch = scenarios.slice(i, i + batchSize);
+      await this.processBatchFinancialData(batch, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of financial data records
+   */
+  private async processBatchFinancialData(scenarios: TestScenario[], result: SeedingResult): Promise<void> {
     const client = await this.pool.connect();
 
     try {
@@ -238,7 +271,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       }
 
       await client.query('COMMIT');
-      console.log(`✓ Seeded ${result.recordsInserted} financial records (${result.recordsUpdated} updated)`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -246,14 +278,12 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     } finally {
       client.release();
     }
-
-    return result;
   }
 
   /**
-   * Seed application_data table
+   * Seed application_data table with batch processing
    */
-  async seedApplicationData(scenarios: TestScenario[]): Promise<SeedingResult> {
+  async seedApplicationData(scenarios: TestScenario[], batchSize: number = 100): Promise<SeedingResult> {
     const result: SeedingResult = {
       tableName: 'application_data',
       recordsProcessed: 0,
@@ -262,6 +292,19 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       errors: []
     };
 
+    // Process scenarios in batches
+    for (let i = 0; i < scenarios.length; i += batchSize) {
+      const batch = scenarios.slice(i, i + batchSize);
+      await this.processBatchApplicationData(batch, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of application data records
+   */
+  private async processBatchApplicationData(scenarios: TestScenario[], result: SeedingResult): Promise<void> {
     const client = await this.pool.connect();
 
     try {
@@ -311,7 +354,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       }
 
       await client.query('COMMIT');
-      console.log(`✓ Seeded ${result.recordsInserted} application records (${result.recordsUpdated} updated)`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -319,14 +361,12 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     } finally {
       client.release();
     }
-
-    return result;
   }
 
   /**
-   * Seed test_scenarios table
+   * Seed test_scenarios table with batch processing
    */
-  async seedTestScenarios(scenarios: TestScenario[]): Promise<SeedingResult> {
+  async seedTestScenarios(scenarios: TestScenario[], batchSize: number = 100): Promise<SeedingResult> {
     const result: SeedingResult = {
       tableName: 'test_scenarios',
       recordsProcessed: 0,
@@ -335,6 +375,19 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       errors: []
     };
 
+    // Process scenarios in batches
+    for (let i = 0; i < scenarios.length; i += batchSize) {
+      const batch = scenarios.slice(i, i + batchSize);
+      await this.processBatchTestScenarios(batch, result);
+    }
+
+    return result;
+  }
+
+  /**
+   * Process a batch of test scenario records
+   */
+  private async processBatchTestScenarios(scenarios: TestScenario[], result: SeedingResult): Promise<void> {
     const client = await this.pool.connect();
 
     try {
@@ -380,7 +433,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       }
 
       await client.query('COMMIT');
-      console.log(`✓ Seeded ${result.recordsInserted} test scenario records (${result.recordsUpdated} updated)`);
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -388,8 +440,6 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     } finally {
       client.release();
     }
-
-    return result;
   }
 
   /**
@@ -405,26 +455,31 @@ export class DatabaseSeeder implements IDatabaseSeeder {
     const results: SeedingResult[] = [];
 
     try {
-      // Seed in dependency order
-      console.log('\n1. Seeding identity records...');
-      const identityResult = await this.seedIdentityRecords(scenarios);
+      // Seed in dependency order with batch processing
+      console.log(`\n1. Seeding identity records (batch size: ${options.batchSize})...`);
+      const identityResult = await this.seedIdentityRecords(scenarios, options.batchSize);
       results.push(identityResult);
+      console.log(`✓ Seeded ${identityResult.recordsInserted} identity records (${identityResult.recordsUpdated} updated)`);
 
       console.log('\n2. Seeding contact information...');
-      const contactResult = await this.seedContactInformation(scenarios);
+      const contactResult = await this.seedContactInformation(scenarios, options.batchSize);
       results.push(contactResult);
+      console.log(`✓ Seeded ${contactResult.recordsInserted} contact records (${contactResult.recordsUpdated} updated)`);
 
       console.log('\n3. Seeding financial data...');
-      const financialResult = await this.seedFinancialData(scenarios);
+      const financialResult = await this.seedFinancialData(scenarios, options.batchSize);
       results.push(financialResult);
+      console.log(`✓ Seeded ${financialResult.recordsInserted} financial records (${financialResult.recordsUpdated} updated)`);
 
       console.log('\n4. Seeding application data...');
-      const applicationResult = await this.seedApplicationData(scenarios);
+      const applicationResult = await this.seedApplicationData(scenarios, options.batchSize);
       results.push(applicationResult);
+      console.log(`✓ Seeded ${applicationResult.recordsInserted} application records (${applicationResult.recordsUpdated} updated)`);
 
       console.log('\n5. Seeding test scenarios...');
-      const scenarioResult = await this.seedTestScenarios(scenarios);
+      const scenarioResult = await this.seedTestScenarios(scenarios, options.batchSize);
       results.push(scenarioResult);
+      console.log(`✓ Seeded ${scenarioResult.recordsInserted} test scenario records (${scenarioResult.recordsUpdated} updated)`);
 
       // Summary
       const totalProcessed = results.reduce((sum, r) => sum + r.recordsProcessed, 0);
