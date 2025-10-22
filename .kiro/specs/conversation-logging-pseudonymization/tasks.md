@@ -36,18 +36,19 @@
   - Test salt rotation with dual-read compatibility
   - _Requirements: 1.1, 1.4, 1.5, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 3. Create ring buffer with backpressure control
-  - Implement AsyncBuffer class with configurable size limits
-  - Add backpressure logic that drops non-audit events at 80% capacity
+- [ ] 3. Create Redis event queue with backpressure control
+  - Implement RedisEventQueue class using Redis Lists (LPUSH/RPOP) for ordered queuing
+  - Add backpressure logic that drops non-audit events when queue length exceeds threshold
   - Implement priority-based event handling (preserve audit events, drop debug events)
-  - Add capacity utilization tracking and metrics
+  - Add Redis connection management with reconnection logic and fallback buffering
+  - Remove obsolete AsyncBuffer interface (replaced by RedisEventQueue)
   - _Requirements: 2.2, 2.5, 5.3_
 
-- [ ] 3.1 Write unit tests for ring buffer
-  - Test backpressure activation at 80% capacity threshold
+- [ ] 3.1 Write unit tests for Redis event queue
+  - Test Redis queue operations (enqueue/dequeue) with proper ordering
+  - Test backpressure activation when queue length exceeds threshold
   - Test priority-based event dropping (audit events preserved)
-  - Test capacity utilization tracking
-  - Test buffer overflow handling
+  - Test Redis connection failure handling and fallback mechanisms
   - _Requirements: 2.2, 2.5, 5.3_
 
 - [ ] 4. Implement event collector with asynchronous processing
@@ -87,16 +88,16 @@
 
 - [ ] 7. Create storage adapter with failure handling
   - Implement StorageAdapter class with insertEvent, insertAudit, updateGraph methods
-  - Add local buffering for storage outages with configurable size limits
-  - Implement chronological event flushing when storage is restored
-  - Add connection pooling and timeout handling
+  - Add Redis persistence for storage outages with configurable queue limits
+  - Implement chronological event flushing from Redis when storage is restored
+  - Add connection pooling and timeout handling for both Redis and PostgreSQL
   - _Requirements: 5.1, 5.2, 5.3_
 
 - [ ] 7.1 Write integration tests for storage adapter
-  - Test storage outage handling with local buffering
-  - Test chronological event flushing on recovery
-  - Test connection timeout and retry behavior
-  - Test buffer overflow handling during extended outages
+  - Test storage outage handling with Redis persistence
+  - Test chronological event flushing from Redis on recovery
+  - Test connection timeout and retry behavior for both Redis and PostgreSQL
+  - Test Redis queue overflow handling during extended outages
   - _Requirements: 5.1, 5.2, 5.3_
 
 - [ ] 8. Implement audit builder for compliance trail
@@ -131,6 +132,7 @@
   - Create metrics exporter with counters for logs_ingested_total, audit_events_total, pseudonymization_errors_total
   - Add histograms for write_latency_ms and query_latency_ms with p50, p95, p99 percentiles
   - Implement status tracking for backpressure_active, dropped_debug_fields_total, storage_outages_total
+  - Add Redis-specific metrics: redis_queue_length, redis_operations_total, redis_connection_errors_total
   - Ensure all metrics exclude PII and contain no field samples or raw data
   - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
@@ -201,14 +203,16 @@
   - Implement KMS integration for salt and key management
   - Add environment-specific configuration for retention policies
   - Create database migration scripts for schema deployment
-  - Add health check endpoints for monitoring
+  - Add Redis configuration with connection pooling and persistence settings
+  - Add health check endpoints for monitoring (including Redis connectivity)
   - _Requirements: 7.5_
 
 - [ ] 15.1 Write deployment and configuration tests
   - Test KMS integration for key management
   - Test configuration loading and validation
   - Test database migration scripts
-  - Test health check endpoints
+  - Test Redis configuration and connection management
+  - Test health check endpoints (including Redis connectivity checks)
   - _Requirements: 7.5_
 
 - [ ] 16. End-to-end integration and system testing

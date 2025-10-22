@@ -35,7 +35,7 @@ graph TB
 
     subgraph Logging Pipeline
         B1[Event Collector]
-        B2[Async RingBuffer]
+        B2[Redis Event Queue]
         B3[Pseudonymization Engine]
         B4[Audit Builder]
         B5[Storage Adapter]
@@ -51,6 +51,10 @@ graph TB
         C6[Database Pseudonymization Engine]
     end
 
+    subgraph Infrastructure
+        R1[(Redis Event Queue)]
+    end
+
     subgraph Query & Analytics
         D1[Query Interface]
         D2[Metrics Exporter]
@@ -60,7 +64,8 @@ graph TB
     A1 -->|EventEnvelope| B1
     A2 --> B1
     B1 --> B2
-    B2 --> B3
+    B2 --> R1
+    R1 --> B3
     B3 --> B4
     B4 --> B5
     B5 --> C1 & C2 & C3 & C4 & C5
@@ -72,7 +77,7 @@ graph TB
 **Control Flow (Atomic Steps):**
 
 1. Node emits `EventEnvelope`
-2. Collector validates and buffers asynchronously
+2. Collector validates and queues to Redis asynchronously
 3. Pseudonymization Engine transforms payload deterministically
 4. Audit Builder constructs redacted audit record
 5. Storage Adapter writes to Postgres under retry + backpressure policies
@@ -84,8 +89,8 @@ graph TB
 | Component                              | Role                                     | Key Interfaces                                     | Atomic Output                      |
 | -------------------------------------- | ---------------------------------------- | -------------------------------------------------- | ---------------------------------- |
 | **EventEnvelope**                      | Carrier of session event                 | `session_id, thread_id, node, event_type, payload` | Validated, JSON-typed event        |
-| **EventCollector**                     | Accepts events non-blocking              | `logEvent()`                                       | Buffered event                     |
-| **AsyncBuffer (RingBuffer)**           | Queue with bounded memory + backpressure | `enqueue(), dequeue()`                             | Ordered event ready for processing |
+| **EventCollector**                     | Accepts events non-blocking              | `logEvent()`                                       | Queued event in Redis              |
+| **RedisEventQueue**                    | Persistent queue with backpressure       | `enqueue(), dequeue(), getQueueLength()`          | Ordered event ready for processing |
 | **PseudonymizationEngine**             | Field-aware masking, hashing, bucketing  | `pseudonymizePayload()`                            | PII-free payload                   |
 | **Database_Pseudonymization_Engine**   | DB-level triggers, views, stored procedures | `enforceFieldMasking(), applyEncryption()`        | Database-enforced anonymization    |
 | **AuditBuilder**                       | Generates immutable audit trail entries  | `createAuditEvent()`                               | Redacted audit row                 |
@@ -155,13 +160,14 @@ interface ConversationLogger {
   stats(): Promise<SystemStatsDTO>
 }
 
-// Ring buffer with backpressure control
-interface AsyncBuffer {
-  enqueue(event: EventEnvelope): Promise<void>
-  dequeue(): Promise<EventEnvelope | null>
-  applyBackpressure(): boolean
-  getCapacityUtilization(): number
-  flush(): Promise<EventEnvelope[]>
+// Redis-based event queue with backpressure control
+interface RedisEventQueue {
+  enqueue(event: EventEnvelope): Promise<void>        // LPUSH to Redis list
+  dequeue(): Promise<EventEnvelope | null>            // RPOP from Redis list
+  getQueueLength(): Promise<number>                   // LLEN for queue size
+  applyBackpressure(): Promise<boolean>               // Check if queue length > threshold
+  flush(): Promise<EventEnvelope[]>                   // LRANGE + DEL for ordered flush
+  getStats(): Promise<RedisQueueStats>                // Redis INFO + custom metrics
 }
 
 // Storage adapter with failure handling
@@ -246,26 +252,27 @@ FOR EACH ROW EXECUTE FUNCTION enforce_pseudonymization();
 
 | Target            | Metric           | Enforcement                    |
 | ----------------- | ---------------- | ------------------------------ |
-| Write latency     | ≤ 50 ms (p95)    | RingBuffer async processing    |
+| Write latency     | ≤ 50 ms (p95)    | Redis async processing         |
 | Query latency     | ≤ 200 ms (p95)   | Indexed tables + read-replicas |
 | Throughput        | ≥ 1 k events/min | Batched inserts                |
-| Outage resilience | ≤ 30 s           | Local buffer + ordered flush   |
-| Backpressure      | ≤ 80 % buffer    | Drop non-audit events first    |
+| Outage resilience | ≤ 30 s           | Redis persistence + ordered flush |
+| Backpressure      | ≤ 80 % queue     | Drop non-audit events first    |
 
 **Failure Handling & Resilience:**
 
-- **Storage Outages**: Local buffering with configurable size limits, chronological flush on recovery
-- **Buffer Overflow**: Preserve audit events, drop debug events using priority-based eviction
+- **Storage Outages**: Redis persistence with configurable queue limits, chronological flush on recovery
+- **Queue Overflow**: Preserve audit events, drop debug events using priority-based eviction
 - **Duplicate Detection**: Based on session_id, thread_id, step_index, and event_type correlation
 - **Retry Logic**: Exponential backoff for failed operations with circuit breaker pattern
 - **Graceful Degradation**: System continues operating even if logging subsystem fails
+- **Redis Outages**: Fallback to in-memory buffer with limited capacity during Redis unavailability
 
 **Observable Metrics:**
 
 - **Counters**: `logs_ingested_total`, `audit_events_total`, `pseudonymization_errors_total`
 - **Histograms**: `write_latency_ms`, `query_latency_ms` with p50, p95, p99 percentiles
 - **Status**: `backpressure_active`, `dropped_debug_fields_total`, `storage_outages_total`
-- **Buffer**: `buffered_events_count` during outages, capacity utilization tracking
+- **Redis Queue**: `redis_queue_length`, `redis_operations_total`, `redis_connection_errors_total`
 
 ---
 
@@ -277,8 +284,8 @@ FOR EACH ROW EXECUTE FUNCTION enforce_pseudonymization();
 | 2  | **Deduplication**           | Same `(session_id, step_index)` twice | Only one row stored                |
 | 3  | **Pseudonymization**        | Payload with SSN, DOB, Email          | All masked / hashed; deterministic |
 | 4  | **Fail-closed mask**        | Engine throws error                   | `[REDACTED]` written; counter +1   |
-| 5  | **Backpressure**            | Buffer > threshold                    | Non-audit dropped; audit preserved |
-| 6  | **Storage outage**          | DB down 30 s                          | Local buffer → flush in order      |
+| 5  | **Backpressure**            | Redis queue > threshold               | Non-audit dropped; audit preserved |
+| 6  | **Storage outage**          | DB down 30 s                          | Redis persistence → flush in order |
 | 7  | **Performance write**       | 1 k events                            | p95 < 50 ms                        |
 | 8  | **Query latency**           | 100 graph queries                     | p95 < 200 ms                       |
 | 9  | **No PII leakage**          | Raw PII payload                       | Trigger blocks write               |
@@ -383,7 +390,7 @@ it('meets p95 ≤50 ms write latency', async () => {
 3. **Deterministic cryptographic hashes** — enables analytics correlations without privacy loss using rotating salts for forward security.
 4. **Fail-closed semantics** — safest possible degradation mode; entire fields masked with `[REDACTED]` on pseudonymization failure.
 5. **Immutable audit trail** — satisfies compliance and forensic traceability with database triggers preventing modifications.
-6. **RingBuffer concurrency** — predictable latency, bounded memory with priority-based backpressure (preserve audit events, drop debug events).
+6. **Redis queue persistence** — predictable latency, durable storage with priority-based backpressure (preserve audit events, drop debug events).
 7. **Schema-level enforcement** — PII cannot enter the system even through SQL injection using regex-based triggers.
 8. **Passive observer pattern** — never blocks LangGraph runtime; asynchronous processing with local buffering during outages.
 9. **Field-specific masking rules** — tailored pseudonymization for different PII types (SSN, DOB, addresses, income) balancing privacy and analytics utility.
@@ -415,7 +422,7 @@ it('meets p95 ≤50 ms write latency', async () => {
 ## 13. Verification Artifacts
 
 * `tests/unit/pseudonymization.spec.ts` - Core pseudonymization logic
-* `tests/unit/ring-buffer.spec.ts` - Backpressure and buffering logic
+* `tests/unit/redis-event-queue.spec.ts` - Redis queue and backpressure logic
 * `tests/integration/logging.spec.ts` - End-to-end event processing
 * `tests/integration/database-enforcement.spec.ts` - DB-level PII protection
 * `tests/perf/performance.spec.ts` - Latency and throughput validation
