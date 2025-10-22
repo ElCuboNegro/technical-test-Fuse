@@ -30,9 +30,20 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# local env files - exclude all environment files with secrets
 .env
+.env.*
+!.env.example
+!.env.*.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Explicitly exclude Docker environment files with secrets
+.env.docker
+.env.dev
+.env.prod
 
 # vercel
 .vercel
