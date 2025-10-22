@@ -36,7 +36,13 @@
   - Test salt rotation with dual-read compatibility
   - _Requirements: 1.1, 1.4, 1.5, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 3. Create Redis event queue with backpressure control
+- [x] 3. Create Redis event queue with backpressure control
+
+
+
+
+
+
   - Implement RedisEventQueue class using Redis Lists (LPUSH/RPOP) for ordered queuing
   - Add backpressure logic that drops non-audit events when queue length exceeds threshold
   - Implement priority-based event handling (preserve audit events, drop debug events)
@@ -44,14 +50,18 @@
   - Remove obsolete AsyncBuffer interface (replaced by RedisEventQueue)
   - _Requirements: 2.2, 2.5, 5.3_
 
-- [ ] 3.1 Write unit tests for Redis event queue
+- [x] 3.1 Write unit tests for Redis event queue
+
+
   - Test Redis queue operations (enqueue/dequeue) with proper ordering
   - Test backpressure activation when queue length exceeds threshold
   - Test priority-based event dropping (audit events preserved)
   - Test Redis connection failure handling and fallback mechanisms
   - _Requirements: 2.2, 2.5, 5.3_
 
-- [ ] 4. Implement event collector with asynchronous processing
+- [-] 4. Implement event collector with asynchronous processing
+
+
   - Create ConversationLogger class with non-blocking logEvent method
   - Implement asynchronous event processing that never blocks LangGraph runtime
   - Add duplicate event detection based on session_id, thread_id, step_index, and event_type
