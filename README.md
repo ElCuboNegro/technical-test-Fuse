@@ -1,10 +1,10 @@
 # Voice Verification Agent - Multi-Node Learning System
 
-A LangGraph-based multi-agent AI application for voice verification workflows, built with Next.js, TypeScript, and PostgreSQL.
+A LangGraph-based multi-agent AI application for voice verification workflows, built with Next.js, TypeScript, and PostgreSQL. Features comprehensive conversation logging with privacy-compliant pseudonymization for regulatory compliance and analytics.
 
 ## Overview
 
-This project implements a comprehensive voice verification system with multi-step financial verification conversations, featuring strict identity gates, professional failure handling, and voice-optimized responses.
+This project implements a comprehensive voice verification system with multi-step financial verification conversations, featuring strict identity gates, professional failure handling, voice-optimized responses, and a sophisticated conversation logging system that ensures all persistent data is pseudonymized for GDPR/CCPA compliance.
 
 ## Architecture
 
@@ -14,22 +14,32 @@ This project implements a comprehensive voice verification system with multi-ste
 - **Database Layer**: PostgreSQL with comprehensive seeding and testing infrastructure
 - **Voice Interface**: TTS-optimized responses and conversation patterns
 - **Security Layer**: Identity verification gates and PII protection
+- **Conversation Logging System**: Privacy-compliant event logging with pseudonymization
+- **Audit & Compliance**: Immutable audit trails for regulatory compliance
 
 ### Project Structure
 
 ```
 ├── apps/                    # Application modules
+│   ├── agents/             # LangGraph agent implementations
+│   └── web/               # Next.js web interface
 ├── src/
-│   └── database/
-│       ├── seeding/         # Database seeding system
-│       ├── connection/      # Database connection management
-│       └── cli/            # Command-line tools
+│   ├── database/
+│   │   ├── seeding/        # Database seeding system
+│   │   ├── connection/     # Database connection management
+│   │   ├── migration/      # Migration management
+│   │   └── cli/           # Command-line tools
+│   └── logging/           # Conversation logging system (planned)
+│       ├── pseudonymization/ # PII pseudonymization engine
+│       ├── audit/         # Audit trail management
+│       ├── storage/       # Event storage adapters
+│       └── compliance/    # Compliance reporting
 ├── tests/
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
-│   └── setup/             # Test configuration
-├── migrations/             # Database migrations
-└── docker/                # Docker configurations
+│   ├── unit/              # Unit tests
+│   ├── integration/       # Integration tests
+│   └── setup/            # Test configuration
+├── migrations/            # Database migrations
+└── docker/               # Docker configurations
 ```
 
 ## Database Seeding System
@@ -58,17 +68,23 @@ The database seeding system provides comprehensive mock data management for test
 #### Command Line Interface
 
 ```bash
-# Seed all tables with mock data
-npm run seed
+# Seed test database with mock data
+npm run seed:test
 
-# Seed specific table
-npm run seed -- --table identity_records
+# Clean test database
+npm run seed:clean
 
-# Dry run (no actual data changes)
-npm run seed -- --dry-run
+# Reset test database (clean + seed)
+npm run seed:reset
 
-# Custom batch size
-npm run seed -- --batch-size 50
+# Set up test environment
+npm run setup:test
+
+# Verify database tables
+npm run verify:tables
+
+# Test data structure validation
+npm run test:data-structure
 ```
 
 #### Programmatic Usage
@@ -171,11 +187,8 @@ The `comprehensive-scenarios.test.ts` file provides complete end-to-end validati
 # Run all tests (automatically loads .env configuration)
 npm test
 
-# Run unit tests only
-npm run test:unit
-
-# Run integration tests only
-npm run test:integration
+# Run tests in watch mode
+npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
@@ -250,14 +263,72 @@ docker-compose -f docker-compose.dev.yml up -d
 docker-compose logs -f
 ```
 
+## Conversation Logging & Pseudonymization System
+
+### Overview
+
+The system includes a comprehensive conversation logging and pseudonymization framework designed to ensure all persistent data (logs, metrics, database records) is structurally guaranteed to be pseudonymized and compliant with privacy regulations (GDPR/CCPA).
+
+### Key Features
+
+- **Passive Observer Architecture**: Operates asynchronously without blocking LangGraph runtime
+- **Deterministic Pseudonymization**: Cryptographically keyed, non-reversible data transformation
+- **Fail-Closed Privacy Model**: Never emits raw PII; masks entire fields on pseudonymization failure
+- **Performance Bounded**: <50ms writes, <200ms queries with backpressure control
+- **Immutable Audit Trail**: Compliance-ready audit events with retention policies
+
+### Architecture Components
+
+#### Event Processing Pipeline
+- **Event Collector**: Non-blocking event ingestion from LangGraph runtime
+- **Async Ring Buffer**: Bounded memory queue with priority-based backpressure
+- **Pseudonymization Engine**: Field-aware masking, hashing, and bucketing
+- **Storage Adapter**: Resilient persistence with failure handling
+
+#### Database Enforcement Layer
+- **Conversation Events**: Unified log with JSONB pseudonymized payloads
+- **Audit Events**: Immutable compliance trail with database triggers
+- **Graph Visualization**: PII-safe node and edge tracking
+- **Pseudonym Cache**: Deterministic re-mapping with TTL enforcement
+
+#### Compliance & Analytics
+- **Query Interfaces**: PII-safe analytics and reporting
+- **Compliance Engine**: Regulatory audit trail generation
+- **Metrics Export**: Observable system health without PII exposure
+- **Privacy Assessment**: Automated PII pattern scanning
+
+### PII Handling Rules
+
+- **SSN Last-4**: Masked as "****", stored as SHA-256 hash with rotating salts
+- **Date of Birth**: Masked as "****-**-**", stored as SHA-256 hash
+- **Addresses**: Street masked, city/state/ZIP preserved for analytics
+- **Email**: Local part masked as "****@****.***", domain optionally preserved
+- **Income**: Converted to configurable range buckets (e.g., "$50K-$75K")
+
+### Database-Level Enforcement
+
+- **PII Detection Triggers**: Regex-based pattern matching prevents raw PII insertion
+- **Field-Level Encryption**: pgcrypto or TDE for sensitive columns
+- **Row-Level Security**: RBAC enforcement with analytics-safe views
+- **Audit Immutability**: Database triggers prevent UPDATE/DELETE on audit records
+
+### Performance & Resilience
+
+- **Write Latency**: p95 ≤ 50ms with async processing
+- **Query Latency**: p95 ≤ 200ms with indexed views
+- **Storage Outages**: Local buffering with chronological flush on recovery
+- **Backpressure**: Priority-based event dropping (preserve audit, drop debug)
+- **Duplicate Detection**: Session/thread/step correlation prevents duplicates
+
 ## Security Features
 
 ### PII Protection
 
 - **Hashed Storage**: DOB and SSN data stored as SHA-256 hashes
 - **Test Data Safety**: Raw PII only in test scenarios, never in production
-- **Audit Logging**: Comprehensive logging without PII exposure
+- **Comprehensive Pseudonymization**: All conversation data pseudonymized before persistence
 - **Environment Isolation**: Separate test and production databases
+- **KMS-Managed Keys**: Quarterly salt rotation with dual-read compatibility
 
 ### Identity Verification
 
@@ -297,7 +368,7 @@ cp .env.example .env
 npm run migrate
 
 # Seed test data
-npm run seed
+npm run seed:test
 
 # Run tests
 npm test
@@ -305,6 +376,29 @@ npm test
 # Start development server
 npm run dev
 ```
+
+### Conversation Logging Development
+
+The conversation logging and pseudonymization system is currently in development. Key implementation areas include:
+
+#### Core Data Structures
+- `EventEnvelope` interface with session metadata and payload
+- `EventType` enum supporting all LangGraph event types
+- Pseudonymization engine interfaces with deterministic hashing
+
+#### Implementation Components
+- **Pseudonymization Engine**: Deterministic PII masking with rotating salts
+- **Ring Buffer**: Backpressure-controlled event queuing
+- **Event Collector**: Non-blocking asynchronous event processing
+- **Database Schema**: Pseudonymization-enforced tables with triggers
+- **Storage Adapter**: Resilient persistence with failure handling
+- **Compliance Engine**: Privacy-safe query interfaces
+
+#### Testing Strategy
+- Unit tests for pseudonymization determinism and PII masking
+- Integration tests for database enforcement and event processing
+- Performance tests for latency and throughput requirements
+- Security tests for PII pattern detection and privacy assessment
 
 ### Code Quality
 
@@ -329,13 +423,35 @@ npm run dev
 - Schema integrity verification
 - Seeding process monitoring
 - Test execution tracking
+- Conversation logging system health
+- Pseudonymization engine status
 
-### Logging
+### Logging & Metrics
 
-- Structured logging with correlation IDs
-- PII-safe audit trails
-- Performance metrics
-- Error tracking and alerting
+- **Structured Logging**: Correlation IDs with PII-safe audit trails
+- **Performance Metrics**: Write/query latency histograms with p50/p95/p99 percentiles
+- **System Counters**: Events ingested, audit records created, pseudonymization errors
+- **Status Tracking**: Backpressure activation, storage outages, buffer utilization
+- **Compliance Metrics**: PII-free analytics and reporting capabilities
+
+### Observable Metrics
+
+```typescript
+// Counter metrics
+logs_ingested_total
+audit_events_total
+pseudonymization_errors_total
+dropped_debug_fields_total
+storage_outages_total
+
+// Histogram metrics
+write_latency_ms (p50, p95, p99)
+query_latency_ms (p50, p95, p99)
+
+// Status metrics
+backpressure_active
+buffered_events_count
+```
 
 ## Deployment
 
@@ -347,6 +463,12 @@ npm run dev
 - [ ] Health checks passing
 - [ ] Monitoring configured
 - [ ] Backup strategy implemented
+- [ ] Conversation logging system deployed
+- [ ] Pseudonymization engine configured with KMS
+- [ ] Audit trail retention policies set
+- [ ] Privacy compliance validation completed
+- [ ] PII detection triggers active
+- [ ] Metrics export configured (PII-free)
 
 ### Docker Deployment
 
@@ -357,6 +479,23 @@ docker build -t voice-verification-agent .
 # Run with docker-compose
 docker-compose -f docker-compose.yml up -d
 ```
+
+## Recent Updates
+
+### Version 0.4.4
+
+- Enhanced database seeding system with comprehensive CLI tools
+- Improved test infrastructure with automatic environment configuration
+- Added data validation and consistency framework
+- Expanded mock data scenarios for comprehensive testing
+- Conversation logging and pseudonymization system in development
+
+### Upcoming Features
+
+- **Conversation Logging System**: Privacy-compliant event logging with pseudonymization
+- **Audit & Compliance**: Immutable audit trails for regulatory compliance
+- **Analytics Interface**: PII-safe conversation pattern analysis
+- **Performance Monitoring**: Observable metrics with privacy protection
 
 ## License
 

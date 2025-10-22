@@ -180,9 +180,9 @@ describe('DatabaseValidator', () => {
           rows: [
             { indexname: 'idx_identity_records_ref' },
             { indexname: 'idx_identity_records_combo' },
-            { indexname: 'idx_contact_info_ref' },
-            { indexname: 'idx_financial_data_ref' },
-            { indexname: 'idx_application_data_ref' },
+            { indexname: 'idx_contact_external_ref' },
+            { indexname: 'idx_financial_external_ref' },
+            { indexname: 'idx_application_external_ref' },
             { indexname: 'idx_test_scenarios_name' }
           ]
         })
@@ -203,7 +203,7 @@ describe('DatabaseValidator', () => {
           rows: [
             { column_name: 'id' },
             { column_name: 'external_ref' },
-            { column_name: 'street' },
+            { column_name: 'street_address' },
             { column_name: 'city' },
             { column_name: 'state' },
             { column_name: 'zip_code' },
@@ -225,6 +225,9 @@ describe('DatabaseValidator', () => {
           rows: [
             { column_name: 'id' },
             { column_name: 'external_ref' },
+            { column_name: 'application_id' },
+            { column_name: 'status' },
+            { column_name: 'metadata' },
             { column_name: 'created_at' },
             { column_name: 'updated_at' }
           ]
@@ -236,6 +239,7 @@ describe('DatabaseValidator', () => {
             { column_name: 'description' },
             { column_name: 'expected_flow' },
             { column_name: 'expected_outcome' },
+            { column_name: 'scenario_type' },
             { column_name: 'created_at' },
             { column_name: 'updated_at' }
           ]

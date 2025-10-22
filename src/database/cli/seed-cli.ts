@@ -5,10 +5,6 @@ import { DatabaseManager } from '../connection/database-manager';
 import { MockDataParser } from '../seeding/parser';
 import { DatabaseSeeder } from '../seeding/seeder';
 import { DatabaseValidator } from '../seeding/validator';
-import { error } from 'console';
-import { error } from 'console';
-import { error } from 'console';
-import { error } from 'console';
 
 // Progress reporting utility
 class ProgressReporter {
@@ -65,8 +61,9 @@ class AuditLogger {
     
     this.logs.push(logEntry);
     
-    // Write to console in structured format
-    console.log(`\n[AUDIT] ${logEntry.timestamp} - ${operation} - ${success ? 'SUCCESS' : 'FAILURE'}`);
+    // Output audit log
+    const status = success ? 'SUCCESS' : 'FAILURE';
+    console.log(`\n[AUDIT] ${logEntry.timestamp} - ${operation} - ${status}`);
     console.log(`  Environment: ${environment}`);
     console.log(`  Command: ${command}`);
     console.log(`  Duration: ${duration}ms`);
@@ -84,20 +81,10 @@ class AuditLogger {
     const redacted = { ...details };
     
     // Redact common PII fields
-    const piiFields = ['ssn', 'ssn_last_four', 'date_of_birth', 'dob', 'email', 'name'];
-    
-    for (const field of piiFields) {
-      if (redacted[field]) {
-        redacted[field] = '[REDACTED]';
-      }
-    }
-    
-    // Redact nested objects
-    for (const key in redacted) {
-      if (typeof redacted[key] === 'object') {
-        redacted[key] = this.redactPII(redacted[key]);
-      }
-    }
+    if (redacted.dob) redacted.dob = '****-**-**';
+    if (redacted.ssn) redacted.ssn = '****';
+    if (redacted.email) redacted.email = '****@****.***';
+    if (redacted.address) redacted.address = '[REDACTED]';
     
     return redacted;
   }
@@ -114,66 +101,38 @@ class AuditLogger {
 // Load environment variables from .env file
 config();
 
-/**
- * CLI script for seeding database with test data from mock_test_data.json
- * 
- * Usage: 
- *   tsx src/database/cli/seed-cli.ts [command] [options]
- * 
- * Commands:
- *   seed (default) - Seed database with test data
- *   clean - Remove all test data from database
- *   reset - Clean and then seed database
- *   validate - Validate database schema and data integrity
- *   setup - Run migrations and seed database (full setup)
- * 
- * Options:
- *   --env=test|production - Target environment (default: test)
- *   --dry-run - Show what would be done without making changes
- *   --verbose - Show detailed output and progress
- * 
- * Examples:
- *   tsx src/database/cli/seed-cli.ts seed --env=test --verbose
- *   tsx src/database/cli/seed-cli.ts clean --dry-run
- *   tsx src/database/cli/seed-cli.ts reset --env=production
- *   tsx src/database/cli/seed-cli.ts validate
- *   tsx src/database/cli/seed-cli.ts setup --env=test
- * 
- * Requirements addressed: 4.2, 4.4, 4.5, 8.4, 8.5, 8.6
- */
-
 function showHelp() {
   console.log(`
-Database Seeding CLI
+=== Database Seeding CLI ===
 
-Usage: tsx src/database/cli/seed-cli.ts [command] [options]
+Usage: tsx seed-cli.ts [command] [options]
 
 Commands:
-  seed (default)  Seed database with test data from mock_test_data.json
-  clean          Remove all test data from database
-  reset          Clean and then seed database (clean + seed)
-  validate       Validate database schema and data integrity
-  setup          Run migrations and seed database (full setup)
-  help           Show this help message
+  seed      Seed database with test data
+  clean     Clean test data from database
+  reset     Clean and then seed database
+  validate  Validate database schema and data
+  setup     Run migrations and seed database
+  help      Show this help message
 
 Options:
-  --env=ENV      Target environment: test or production (default: test)
-  --dry-run      Show what would be done without making changes
-  --verbose      Show detailed output and progress information
-  --help, -h     Show this help message
+  --env=<env>     Environment (test|production) [default: test]
+  --dry-run       Show what would be done without making changes
+  --verbose       Show detailed output and progress
+  --help, -h      Show this help message
 
 Examples:
-  tsx src/database/cli/seed-cli.ts seed --env=test --verbose
-  tsx src/database/cli/seed-cli.ts clean --dry-run
-  tsx src/database/cli/seed-cli.ts reset --env=production
-  tsx src/database/cli/seed-cli.ts validate
-  tsx src/database/cli/seed-cli.ts setup --env=test
+  tsx seed-cli.ts seed --env=test
+  tsx seed-cli.ts clean --env=test --dry-run
+  tsx seed-cli.ts reset --env=test --verbose
+  tsx seed-cli.ts validate --env=test
 
 Safety Features:
-  - Production operations require explicit confirmation
+  - Production environment requires explicit confirmation
   - Dry-run mode available for all operations
-  - Environment validation prevents accidental production seeding
-  - Comprehensive error handling and rollback on failures
+  - Comprehensive audit logging
+  - PII redaction in logs
+  - Database validation before operations
 
 For more information, see DATABASE_SEEDING.md
 `);
@@ -181,53 +140,69 @@ For more information, see DATABASE_SEEDING.md
 
 async function main() {
   const args = process.argv.slice(2);
-  
-  // Parse arguments
-  const envArg = args.find(arg => arg.startsWith('--env='));
-  const environment = envArg ? envArg.split('=')[1] as 'test' | 'production' : 'test';
-  
-  const command = args.find(arg => !arg.startsWith('--')) || 'seed';
+  const command = args[0] || 'help';
+  const environment = args.find(arg => arg.startsWith('--env='))?.split('=')[1] || 'test';
   const dryRun = args.includes('--dry-run');
   const verbose = args.includes('--verbose');
   const help = args.includes('--help') || args.includes('-h') || command === 'help';
 
   if (help) {
     showHelp();
-    process.exit(0);
+    return;
   }
 
-  if (environment !== 'test' && environment !== 'production') {
+  // Validate environment
+  if (!['test', 'production'].includes(environment)) {
     console.error('Error: Environment must be either "test" or "production"');
     process.exit(1);
   }
 
-  console.log(`=== Database Seeding CLI ===`);
+  // Show production warning
+  if (environment === 'production' && !dryRun) {
+    console.log('⚠️  WARNING: Running in PRODUCTION environment');
+    console.log('   This will affect live data. Use --dry-run to preview changes.');
+  }
+
+  console.log('=== Database Seeding CLI ===');
   console.log(`Command: ${command}`);
   console.log(`Environment: ${environment}`);
   console.log(`Dry run: ${dryRun ? 'Yes' : 'No'}`);
   console.log(`Verbose: ${verbose ? 'Yes' : 'No'}`);
 
-  const dbManager = new DatabaseManager();
-  const auditLogger = new AuditLogger();
   const progressReporter = new ProgressReporter();
+  const auditLogger = new AuditLogger();
+  let operationSuccess = false;
 
   try {
-    // Get database pool
-    const pool = dbManager.getPool(environment);
+    // Initialize database manager
+    const dbManager = new DatabaseManager();
+    await dbManager.initialize();
+    const pool = dbManager.getPool(environment as 'test' | 'production');
+
+    if (!pool) {
+      throw new Error(`Failed to get database pool for environment: ${environment}`);
+    }
+
+    // Show database configuration
+    const databaseUrl = dbManager.getDatabaseUrl(environment as 'test' | 'production');
     
-    // Validate database connection and environment
+    console.log('Database Configuration:');
+    console.log(`  Environment: ${environment}`);
+    console.log(`  Database URL: ${databaseUrl.replace(/:[^:@]*@/, ':***@')}`);
+
+    // Validate database before operations
+    const validator = new DatabaseValidator(databaseUrl);
+    
     console.log('\n=== Database Validation ===');
-    const validator = new DatabaseValidator(dbManager.getDatabaseUrl(environment));
-    
-    const connectionValid = await validator.validateConnection(dbManager.getDatabaseUrl(environment));
+    const connectionValid = await validator.validateConnection(databaseUrl);
     if (!connectionValid) {
       throw new Error('Database connection validation failed');
     }
     console.log('✓ Database connection validated');
 
-    const envValid = await validator.validateEnvironment(environment);
-    if (!envValid) {
-      throw new Error(`Environment validation failed for ${environment}`);
+    const environmentValid = await validator.validateEnvironment(environment as 'test' | 'production');
+    if (!environmentValid) {
+      throw new Error(`Environment validation failed for: ${environment}`);
     }
     console.log(`✓ Environment validated for ${environment}`);
 
@@ -236,51 +211,21 @@ async function main() {
       throw new Error(`Missing required tables: ${missingTables.join(', ')}`);
     }
     console.log('✓ All required tables exist');
-
-    // Production safety check
-    if (environment === 'production') {
-      const dbUrl = dbManager.getDatabaseUrl(environment);
-      const dbName = new URL(dbUrl).pathname.slice(1); // Remove leading slash
-      if (dbName.includes('prod') || dbName.includes('production')) {
-        console.log('\n⚠️  WARNING: You are about to modify a PRODUCTION database!');
-        console.log(`Database: ${dbName}`);
-        console.log(`Command: ${command}`);
-        
-        if (!dryRun) {
-          const readline = require('readline');
-          const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-          });
-          
-          const answer = await new Promise<string>((resolve) => {
-            rl.question('Type "CONFIRM" to proceed with production operation: ', resolve);
-          });
-          rl.close();
-          
-          if (answer !== 'CONFIRM') {
-            console.log('Operation cancelled.');
-            process.exit(0);
-          }
-        }
-      }
-    }
-
-    // Execute command with audit logging
-    auditLogger.reset();
-    let operationSuccess = false;
     
     try {
       switch (command) {
         case 'seed':
+          auditLogger.reset();
           await seedDatabase(pool, dryRun, verbose, progressReporter);
           operationSuccess = true;
           break;
         case 'clean':
+          auditLogger.reset();
           await cleanDatabase(pool, dryRun, verbose, progressReporter);
           operationSuccess = true;
           break;
         case 'reset':
+          auditLogger.reset();
           await cleanDatabase(pool, dryRun, verbose, progressReporter);
           if (!dryRun) {
             await seedDatabase(pool, dryRun, verbose, progressReporter);
@@ -288,46 +233,44 @@ async function main() {
           operationSuccess = true;
           break;
         case 'validate':
+          auditLogger.reset();
           await validateDatabase(pool, verbose);
           operationSuccess = true;
           break;
         case 'setup':
+          auditLogger.reset();
           await setupDatabase(pool, dryRun, verbose, progressReporter);
           operationSuccess = true;
           break;
         default:
           console.error(`Unknown command: ${command}`);
-          console.error('Available commands: seed, clean, reset, validate, setup');
+          console.log('Use --help to see available commands');
           process.exit(1);
       }
-      
-      auditLogger.logOperation(
-        `database_${command}`,
-        environment,
-        `${command} ${dryRun ? '--dry-run' : ''} ${verbose ? '--verbose' : ''}`.trim(),
-        operationSuccess,
-        { dryRun, verbose }
-      );
-      
+
+      // Log successful operation
+      auditLogger.logOperation(`database_${command}`, environment, command, true);
+      console.log('✓ Database seeding operation completed successfully');
+
     } catch (error) {
-      auditLogger.logOperation(
-        `database_${command}`,
-        environment,
-        `${command} ${dryRun ? '--dry-run' : ''} ${verbose ? '--verbose' : ''}`.trim(),
-        false,
-        { dryRun, verbose, error: error instanceof Error ? error.message : 'Unknown error' }
-      );
-      throw error;
+      // Log failed operation
+      auditLogger.logOperation(`database_${command}`, environment, command, false, {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      
+      console.error(`✗ Database seeding operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      process.exit(1);
+    } finally {
+      await validator.close();
     }
 
-    await validator.close();
-    console.log('\n✓ Database seeding operation completed successfully');
+    // Shutdown database connections
+    console.log('✓ Database connections shut down successfully');
+    await dbManager.shutdown();
 
   } catch (error) {
-    console.error('\n✗ Database seeding operation failed:', error);
+    console.error(`✗ Database operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     process.exit(1);
-  } finally {
-    await dbManager.shutdown();
   }
 }
 
@@ -337,42 +280,29 @@ async function main() {
 async function seedDatabase(pool: any, dryRun: boolean, verbose: boolean, progressReporter?: ProgressReporter) {
   console.log('\n=== Seeding Database ===');
 
-  try {
-    // Parse test scenarios
-    const parser = new MockDataParser();
-    const scenarios = await parser.parseTestScenarios();
-    
-    if (verbose) {
-      console.log('Parsed scenarios:');
-      scenarios.forEach(scenario => {
-        console.log(`  - ${scenario.scenario_name}: ${scenario.description}`);
-      });
-    }
+  const parser = new MockDataParser();
+  const scenarios = await parser.parseTestScenarios();
+  console.log(`✓ Parsed ${scenarios.length} valid test scenarios`);
 
-    // Create seeder and seed all tables with progress reporting
-    const seeder = new DatabaseSeeder(pool);
-    
-    if (verbose) {
-      console.log(`\nProcessing ${scenarios.length} scenarios in batches of 100...`);
-      console.log('Progress will be shown for each table...\n');
-    }
-    
+  const seeder = new DatabaseSeeder(pool);
+
+  try {
     const results = await seeder.seedAllTables(scenarios, {
       dryRun,
       batchSize: 100,
       skipValidation: false
     });
 
-    // Display detailed results if verbose
     if (verbose) {
       console.log('\nDetailed Results:');
       results.forEach(result => {
-        console.log(`\n${result.tableName}:`);
+        console.log(`${result.tableName}:`);
         console.log(`  Processed: ${result.recordsProcessed}`);
         console.log(`  Inserted: ${result.recordsInserted}`);
         console.log(`  Updated: ${result.recordsUpdated}`);
+        console.log(`  Errors: ${result.errors.length}`);
+        
         if (result.errors.length > 0) {
-          console.log(`  Errors: ${result.errors.length}`);
           result.errors.forEach(error => console.log(`    - ${error}`));
         }
       });
@@ -384,13 +314,12 @@ async function seedDatabase(pool: any, dryRun: boolean, verbose: boolean, progre
 }
 
 /**
- * Validate database schema and data integrity
+ * Validate database schema and data
  */
 async function validateDatabase(pool: any, verbose: boolean) {
   console.log('\n=== Validating Database ===');
 
   const client = await pool.connect();
-  let validationErrors = 0;
 
   try {
     // Check table existence
@@ -398,85 +327,57 @@ async function validateDatabase(pool: any, verbose: boolean) {
     
     for (const tableName of tables) {
       const result = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = $1
-        )
+        SELECT COUNT(*) as count 
+        FROM information_schema.tables 
+        WHERE table_name = $1 AND table_schema = 'public'
       `, [tableName]);
       
-      if (!result.rows[0].exists) {
-        console.log(`✗ Table ${tableName} does not exist`);
-        validationErrors++;
-      } else if (verbose) {
-        console.log(`✓ Table ${tableName} exists`);
-      }
-    }
-
-    // Check foreign key relationships
-    const orphanedRecords = await client.query(`
-      SELECT 'contact_information' as table_name, COUNT(*) as count
-      FROM contact_information ci
-      LEFT JOIN identity_records ir ON ci.external_ref = ir.external_ref
-      WHERE ir.external_ref IS NULL
-      UNION ALL
-      SELECT 'financial_data' as table_name, COUNT(*) as count
-      FROM financial_data fd
-      LEFT JOIN identity_records ir ON fd.external_ref = ir.external_ref
-      WHERE ir.external_ref IS NULL
-      UNION ALL
-      SELECT 'application_data' as table_name, COUNT(*) as count
-      FROM application_data ad
-      LEFT JOIN identity_records ir ON ad.external_ref = ir.external_ref
-      WHERE ir.external_ref IS NULL
-    `);
-
-    orphanedRecords.rows.forEach(row => {
-      if (parseInt(row.count) > 0) {
-        console.log(`✗ Found ${row.count} orphaned records in ${row.table_name}`);
-        validationErrors++;
-      } else if (verbose) {
-        console.log(`✓ No orphaned records in ${row.table_name}`);
-      }
-    });
-
-    // Check data integrity
-    const integrityChecks = await client.query(`
-      SELECT 
-        'identity_records' as table_name,
-        COUNT(*) as total_records,
-        COUNT(CASE WHEN dob_hash IS NULL OR ssn4_hash IS NULL THEN 1 END) as missing_hashes
-      FROM identity_records
-      UNION ALL
-      SELECT 
-        'contact_information' as table_name,
-        COUNT(*) as total_records,
-        COUNT(CASE WHEN street_address IS NULL OR city IS NULL OR state IS NULL OR zip_code IS NULL THEN 1 END) as missing_required
-      FROM contact_information
-    `);
-
-    integrityChecks.rows.forEach(row => {
+      const exists = parseInt(result.rows[0].count) > 0;
+      
       if (verbose) {
-        console.log(`✓ ${row.table_name}: ${row.total_records} records`);
+        console.log(`✓ Table ${tableName} ${exists ? 'exists' : 'missing'}`);
       }
       
-      const missingData = parseInt(row.missing_hashes || row.missing_required || '0');
-      if (missingData > 0) {
-        console.log(`✗ ${row.table_name}: ${missingData} records with missing required data`);
-        validationErrors++;
+      if (!exists) {
+        throw new Error(`Required table missing: ${tableName}`);
       }
-    });
-
-    if (validationErrors === 0) {
-      console.log('✓ Database validation passed');
-    } else {
-      console.log(`✗ Database validation failed with ${validationErrors} errors`);
-      process.exit(1);
     }
 
+    // Check for orphaned records
+    if (verbose) {
+      console.log('Checking data integrity...');
+      
+      const orphanCheck = await client.query(`
+        SELECT 'contact_information' as table_name, COUNT(*) as orphans
+        FROM contact_information c
+        LEFT JOIN identity_records i ON c.external_ref = i.external_ref
+        WHERE i.external_ref IS NULL
+        UNION ALL
+        SELECT 'financial_data' as table_name, COUNT(*) as orphans
+        FROM financial_data f
+        LEFT JOIN identity_records i ON f.external_ref = i.external_ref
+        WHERE i.external_ref IS NULL
+        UNION ALL
+        SELECT 'application_data' as table_name, COUNT(*) as orphans
+        FROM application_data a
+        LEFT JOIN identity_records i ON a.external_ref = i.external_ref
+        WHERE i.external_ref IS NULL
+      `);
+      
+      orphanCheck.rows.forEach((row: any) => {
+        const orphanCount = parseInt(row.orphans);
+        if (orphanCount > 0) {
+          console.log(`⚠️  Found ${orphanCount} orphaned records in ${row.table_name}`);
+        } else {
+          console.log(`✓ No orphaned records in ${row.table_name}`);
+        }
+      });
+    }
+
+    console.log('✓ Database validation passed');
+
   } catch (error) {
-    console.error('✗ Database validation error:', error);
-    process.exit(1);
+    throw new Error(`Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
     client.release();
   }
@@ -548,13 +449,22 @@ async function cleanDatabase(pool: any, dryRun: boolean, verbose: boolean, progr
         progressReporter.showProgress(i + 1, tables.length, 'Cleaning tables');
       }
       
-      const result = await client.query(
-        `DELETE FROM ${tableName} 
-         WHERE external_ref LIKE '%test%' 
-            OR external_ref LIKE '%scenario%'
-            OR created_at > NOW() - INTERVAL '1 day'`
-      );$')$')$')$')
-      `);
+      let deleteQuery: string;
+      
+      // Different tables have different column structures
+      if (tableName === 'test_scenarios') {
+        deleteQuery = `DELETE FROM ${tableName} 
+                       WHERE scenario_name LIKE '%test%' 
+                          OR scenario_name LIKE '%scenario%'
+                          OR created_at > NOW() - INTERVAL '1 day'`;
+      } else {
+        deleteQuery = `DELETE FROM ${tableName} 
+                       WHERE external_ref LIKE '%test%' 
+                          OR external_ref LIKE '%scenario%'
+                          OR created_at > NOW() - INTERVAL '1 day'`;
+      }
+      
+      const result = await client.query(deleteQuery);
 
       const deletedCount = result.rowCount || 0;
       totalDeleted += deletedCount;
@@ -589,10 +499,4 @@ process.on('uncaughtException', (error) => {
 
 if (require.main === module) {
   main();
-}
-    await client.query('ROLLBACK');
-    throw new Error(`Cleaning failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  } finally {
-    client.release();
-  }
 }

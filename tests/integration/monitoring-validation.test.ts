@@ -68,13 +68,16 @@ describe('Monitoring and Validation Capabilities Integration', () => {
   // Helper function to skip tests when database is not available
   const skipIfNoDB = () => {
     if (!isDatabaseAvailable) {
-      return;
+      return true;
     }
+    return false;
   };
 
   describe('Database Connectivity Validation', () => {
     test('should validate database connection before operations', async () => {
-      skipIfNoDB();
+      if (skipIfNoDB()) {
+        return;
+      }
       
       const testDatabaseUrl = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5433/agents_app_test';
       
@@ -93,13 +96,16 @@ describe('Monitoring and Validation Capabilities Integration', () => {
     });
 
     test('should validate connection with timeout handling', async () => {
-      skipIfNoDB();
+      if (skipIfNoDB()) {
+        return;
+      }
       
       // Test connection validation with very short timeout
-      const testValidator = new DatabaseValidator('postgresql://test:test@localhost:5433/agents_app_test');
+      const testDatabaseUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev';
+      const testValidator = new DatabaseValidator(testDatabaseUrl);
       
       const startTime = Date.now();
-      const isValid = await testValidator.validateConnection('postgresql://test:test@localhost:5433/agents_app_test');
+      const isValid = await testValidator.validateConnection(testDatabaseUrl);
       const duration = Date.now() - startTime;
       
       expect(isValid).toBe(true);

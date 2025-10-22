@@ -8,9 +8,10 @@ const cliPath = process.argv[2];
 const args = process.argv.slice(3);
 
 // Use tsx to run the TypeScript file
-const child = spawn('node', ['node_modules/tsx/dist/cli.mjs', cliPath, ...args], {
+const child = spawn('npx', ['tsx', cliPath, ...args], {
   stdio: 'inherit',
-  env: process.env
+  env: process.env,
+  shell: true
 });
 
 child.on('close', (code) => {
