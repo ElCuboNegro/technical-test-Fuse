@@ -71,6 +71,12 @@
 
 
 - [ ] 4.1 Write unit tests for event collector
+
+
+
+
+
+
   - Test non-blocking event acceptance for all EventType values
   - Test duplicate event detection and handling
   - Test retry logic with exponential backoff
