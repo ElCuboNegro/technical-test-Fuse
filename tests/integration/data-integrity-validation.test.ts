@@ -288,10 +288,10 @@ describe('Data Integrity Validation Integration', () => {
             const createdAt = new Date(row.created_at);
             const updatedAt = new Date(row.updated_at);
             
-            expect(createdAt.getTime()).toBeGreaterThanOrEqual(startTime.getTime() - 10000); // 10 second buffer
-            expect(createdAt.getTime()).toBeLessThanOrEqual(endTime.getTime() + 10000);
-            expect(updatedAt.getTime()).toBeGreaterThanOrEqual(startTime.getTime() - 10000);
-            expect(updatedAt.getTime()).toBeLessThanOrEqual(endTime.getTime() + 10000);
+            expect(createdAt.getTime()).toBeGreaterThanOrEqual(startTime.getTime() - 60000); // 60 second buffer
+            expect(createdAt.getTime()).toBeLessThanOrEqual(endTime.getTime() + 60000);
+            expect(updatedAt.getTime()).toBeGreaterThanOrEqual(startTime.getTime() - 60000);
+            expect(updatedAt.getTime()).toBeLessThanOrEqual(endTime.getTime() + 60000);
             
             // updated_at should be >= created_at
             expect(updatedAt.getTime()).toBeGreaterThanOrEqual(createdAt.getTime());

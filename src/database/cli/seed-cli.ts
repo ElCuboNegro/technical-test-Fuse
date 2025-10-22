@@ -5,6 +5,10 @@ import { DatabaseManager } from '../connection/database-manager';
 import { MockDataParser } from '../seeding/parser';
 import { DatabaseSeeder } from '../seeding/seeder';
 import { DatabaseValidator } from '../seeding/validator';
+import { error } from 'console';
+import { error } from 'console';
+import { error } from 'console';
+import { error } from 'console';
 
 // Progress reporting utility
 class ProgressReporter {
@@ -544,11 +548,12 @@ async function cleanDatabase(pool: any, dryRun: boolean, verbose: boolean, progr
         progressReporter.showProgress(i + 1, tables.length, 'Cleaning tables');
       }
       
-      const result = await client.query(`
-        DELETE FROM ${tableName} 
-        WHERE external_ref LIKE '%test%' 
-           OR external_ref LIKE '%scenario%'
-           OR (created_at > NOW() - INTERVAL '1 day' AND external_ref ~ '^[a-z_]+_[0-9]+$')$')$')$')
+      const result = await client.query(
+        `DELETE FROM ${tableName} 
+         WHERE external_ref LIKE '%test%' 
+            OR external_ref LIKE '%scenario%'
+            OR created_at > NOW() - INTERVAL '1 day'`
+      );$')$')$')$')
       `);
 
       const deletedCount = result.rowCount || 0;
@@ -584,4 +589,10 @@ process.on('uncaughtException', (error) => {
 
 if (require.main === module) {
   main();
+}
+    await client.query('ROLLBACK');
+    throw new Error(`Cleaning failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    client.release();
+  }
 }
