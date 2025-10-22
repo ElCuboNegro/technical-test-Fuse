@@ -11,3 +11,6 @@
 
 // Export all interfaces
 export * from './interfaces';
+
+// Export engine implementations
+export * from './engines/pseudonymization-engine';

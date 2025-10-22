@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
 // Simple CLI runner for tests
-const { spawn } = require('child_process');
-const path = require('path');
+const { spawn } = require("child_process");
+const path = require("path");
 
 const cliPath = process.argv[2];
 const args = process.argv.slice(3);
 
 // Use tsx to run the TypeScript file
-const child = spawn('npx', ['tsx', cliPath, ...args], {
-  stdio: 'inherit',
+const child = spawn("npx", ["tsx", cliPath, ...args], {
+  stdio: "inherit",
   env: process.env,
-  shell: true
+  shell: true,
 });
 
-child.on('close', (code) => {
+child.on("close", (code) => {
   process.exit(code);
 });
 
-child.on('error', (error) => {
-  console.error('Error running CLI:', error);
+child.on("error", (error) => {
+  console.error("Error running CLI:", error);
   process.exit(1);
 });

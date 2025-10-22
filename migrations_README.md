@@ -11,6 +11,7 @@ Example: `001_initial_schema.sql`
 ## Migration Structure
 
 Each migration file contains:
+
 - Version number (3-digit zero-padded)
 - Descriptive name
 - SQL statements for schema changes

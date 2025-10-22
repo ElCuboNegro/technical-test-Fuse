@@ -13,18 +13,21 @@ This guide covers Docker-based development for the multi-agent AI application, i
 ### Environment Setup
 
 1. **Clone the repository and navigate to the project root**
+
    ```bash
    git clone <repository-url>
    cd <project-directory>
    ```
 
 2. **Copy environment templates**
+
    ```bash
    cp .env.dev.example .env
    # Edit .env with your specific configuration
    ```
 
 3. **Start development environment**
+
    ```bash
    docker-compose -f docker-compose.dev.yml up
    ```
@@ -40,16 +43,19 @@ This guide covers Docker-based development for the multi-agent AI application, i
 ### Starting Services
 
 **Development Mode (with hot reloading):**
+
 ```bash
 docker-compose -f docker-compose.dev.yml up
 ```
 
 **Production Mode:**
+
 ```bash
 docker-compose up
 ```
 
 **Start specific services:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml up web postgres redis
 ```
@@ -116,21 +122,25 @@ ANTHROPIC_API_KEY=your_anthropic_key
 ### Database Operations
 
 **Access PostgreSQL shell:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec postgres psql -U app_user -d agents_app
 ```
 
 **Run database migrations:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec web npm run db:migrate
 ```
 
 **Seed development data:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec web npm run db:seed
 ```
 
 **Reset database:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec web npm run db:reset
 ```
@@ -138,11 +148,13 @@ docker-compose -f docker-compose.dev.yml exec web npm run db:reset
 ### Redis Operations
 
 **Access Redis CLI:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec redis redis-cli
 ```
 
 **Clear Redis cache:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec redis redis-cli FLUSHALL
 ```
@@ -150,11 +162,13 @@ docker-compose -f docker-compose.dev.yml exec redis redis-cli FLUSHALL
 ### Vector Database Operations (pgvector)
 
 **Access PostgreSQL with vector support:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec postgres psql -U app_user -d agents_app
 ```
 
 **Test pgvector functionality:**
+
 ```sql
 -- Check if pgvector extension is installed
 SELECT * FROM pg_extension WHERE extname = 'vector';
@@ -167,10 +181,11 @@ SELECT id, content, embedding FROM documents WHERE embedding IS NOT NULL LIMIT 5
 ```
 
 **Vector similarity search example:**
+
 ```sql
 -- Find similar documents (replace with actual embedding)
 SELECT document_id, content, 1 - (embedding <=> '[0.1,0.2,0.3,...]'::vector) as similarity
-FROM documents 
+FROM documents
 WHERE embedding IS NOT NULL
 ORDER BY embedding <=> '[0.1,0.2,0.3,...]'::vector
 LIMIT 10;
@@ -179,6 +194,7 @@ LIMIT 10;
 ### Application Development
 
 **Install new dependencies:**
+
 ```bash
 # For web app
 docker-compose -f docker-compose.dev.yml exec web npm install <package-name>
@@ -188,6 +204,7 @@ docker-compose -f docker-compose.dev.yml exec agents npm install <package-name>
 ```
 
 **Run tests:**
+
 ```bash
 # Unit tests
 docker-compose -f docker-compose.dev.yml exec web npm test
@@ -198,6 +215,7 @@ npm run test:integration
 ```
 
 **Build applications:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml exec web npm run build
 docker-compose -f docker-compose.dev.yml exec agents npm run build
@@ -208,8 +226,10 @@ docker-compose -f docker-compose.dev.yml exec agents npm run build
 ### Common Issues
 
 #### Port Conflicts
+
 **Problem:** Port already in use errors
 **Solution:**
+
 ```bash
 # Check what's using the port
 netstat -tulpn | grep :3000
@@ -218,14 +238,18 @@ netstat -tulpn | grep :3000
 ```
 
 #### Database Connection Issues
+
 **Problem:** Cannot connect to PostgreSQL
 **Solutions:**
+
 1. Ensure PostgreSQL service is running:
+
    ```bash
    docker-compose -f docker-compose.dev.yml ps postgres
    ```
 
 2. Check database logs:
+
    ```bash
    docker-compose -f docker-compose.dev.yml logs postgres
    ```
@@ -233,9 +257,12 @@ netstat -tulpn | grep :3000
 3. Verify environment variables in `.env`
 
 #### Redis Connection Issues
+
 **Problem:** Cannot connect to Redis
 **Solutions:**
+
 1. Check Redis service status:
+
    ```bash
    docker-compose -f docker-compose.dev.yml ps redis
    ```
@@ -246,8 +273,10 @@ netstat -tulpn | grep :3000
    ```
 
 #### Hot Reloading Not Working
+
 **Problem:** Code changes not reflected in development
 **Solutions:**
+
 1. Ensure volume mounts are correct in `docker-compose.dev.yml`
 2. Check file permissions (especially on Windows/WSL)
 3. Restart the specific service:
@@ -256,14 +285,18 @@ netstat -tulpn | grep :3000
    ```
 
 #### Build Failures
+
 **Problem:** Docker build fails
 **Solutions:**
+
 1. Clear Docker build cache:
+
    ```bash
    docker system prune -a
    ```
 
 2. Rebuild without cache:
+
    ```bash
    docker-compose -f docker-compose.dev.yml build --no-cache
    ```
@@ -273,6 +306,7 @@ netstat -tulpn | grep :3000
 ### Health Checks
 
 **Check service health:**
+
 ```bash
 # Web app health (includes database, Redis, and pgvector status)
 curl http://localhost:3000/api/health
@@ -282,6 +316,7 @@ curl http://localhost:2024/health
 ```
 
 **View health check logs:**
+
 ```bash
 docker-compose -f docker-compose.dev.yml logs web | grep health
 ```
@@ -289,11 +324,13 @@ docker-compose -f docker-compose.dev.yml logs web | grep health
 ### Performance Optimization
 
 **Monitor resource usage:**
+
 ```bash
 docker stats
 ```
 
 **Optimize Docker performance:**
+
 1. Increase Docker Desktop memory allocation (4GB+ recommended)
 2. Use `.dockerignore` to exclude unnecessary files
 3. Use multi-stage builds for production images
@@ -317,12 +354,14 @@ docker-compose build web
 ### Production Environment
 
 1. **Copy production environment template:**
+
    ```bash
    cp .env.example .env.production
    # Edit with production values
    ```
 
 2. **Start production services:**
+
    ```bash
    docker-compose --env-file .env.production up -d
    ```

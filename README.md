@@ -90,8 +90,8 @@ npm run test:data-structure
 #### Programmatic Usage
 
 ```typescript
-import { DatabaseSeeder } from './src/database/seeding/seeder';
-import { MockDataParser } from './src/database/seeding/parser';
+import { DatabaseSeeder } from "./src/database/seeding/seeder";
+import { MockDataParser } from "./src/database/seeding/parser";
 
 const seeder = new DatabaseSeeder(pool);
 const parser = new MockDataParser();
@@ -103,7 +103,7 @@ const scenarios = await parser.parseTestScenarios();
 const results = await seeder.seedAllTables(scenarios, {
   dryRun: false,
   batchSize: 100,
-  skipValidation: false
+  skipValidation: false,
 });
 
 // Seed individual tables
@@ -132,12 +132,14 @@ The Jest configuration (`tests/setup/jest.setup.ts`) provides:
 dotenv.config();
 
 // Intelligent database URL handling
-const baseUrl = process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev';
-const testDbUrl = baseUrl.replace('/agents_app_dev', '/agents_app_test');
+const baseUrl =
+  process.env.DATABASE_URL ||
+  "postgresql://dev_user:dev_password@localhost:5432/agents_app_dev";
+const testDbUrl = baseUrl.replace("/agents_app_dev", "/agents_app_test");
 
 // Security with fallbacks
-process.env.SSN_SALT = process.env.SSN_SALT || 'test-ssn-salt-12345';
-process.env.DOB_SALT = process.env.DOB_SALT || 'test-dob-salt-67890';
+process.env.SSN_SALT = process.env.SSN_SALT || "test-ssn-salt-12345";
+process.env.DOB_SALT = process.env.DOB_SALT || "test-dob-salt-67890";
 ```
 
 ### Test Coverage
@@ -145,11 +147,13 @@ process.env.DOB_SALT = process.env.DOB_SALT || 'test-dob-salt-67890';
 The project includes comprehensive testing at multiple levels:
 
 #### Unit Tests
+
 - **Database Seeder Logic**: Core seeding algorithms and data transformations
 - **Mock Data Parsing**: JSON parsing and validation logic
 - **Database Validation**: Connection and schema validation utilities
 
 #### Integration Tests
+
 - **Comprehensive Scenarios**: Complete end-to-end testing of all verification scenarios with real database operations
 - **Complete Seeding Process**: End-to-end seeding workflows with all mock data scenarios
 - **Data Integrity Validation**: Foreign key relationships and referential integrity across all tables
@@ -204,6 +208,7 @@ npm test -- --testNamePattern="Comprehensive Test Scenarios"
 ```
 
 **Test Environment Notes**:
+
 - Tests automatically load environment variables from `.env` file
 - Test database URLs are dynamically constructed from your main DATABASE_URL
 - Security salts use secure fallbacks if not specified in environment
@@ -232,6 +237,7 @@ SSN_SALT=your-ssn-salt-here
 ```
 
 **Note**: The test system automatically constructs test database URLs from your main DATABASE_URL by replacing the database name with `_test` suffix. For example:
+
 - Main: `postgresql://user:pass@localhost:5432/agents_app_dev`
 - Test: `postgresql://user:pass@localhost:5432/agents_app_test`
 
@@ -280,18 +286,21 @@ The system includes a comprehensive conversation logging and pseudonymization fr
 ### Architecture Components
 
 #### Event Processing Pipeline
+
 - **Event Collector**: Non-blocking event ingestion from LangGraph runtime
 - **Async Ring Buffer**: Bounded memory queue with priority-based backpressure
 - **Pseudonymization Engine**: Field-aware masking, hashing, and bucketing
 - **Storage Adapter**: Resilient persistence with failure handling
 
 #### Database Enforcement Layer
+
 - **Conversation Events**: Unified log with JSONB pseudonymized payloads
 - **Audit Events**: Immutable compliance trail with database triggers
 - **Graph Visualization**: PII-safe node and edge tracking
 - **Pseudonym Cache**: Deterministic re-mapping with TTL enforcement
 
 #### Compliance & Analytics
+
 - **Query Interfaces**: PII-safe analytics and reporting
 - **Compliance Engine**: Regulatory audit trail generation
 - **Metrics Export**: Observable system health without PII exposure
@@ -299,10 +308,10 @@ The system includes a comprehensive conversation logging and pseudonymization fr
 
 ### PII Handling Rules
 
-- **SSN Last-4**: Masked as "****", stored as SHA-256 hash with rotating salts
-- **Date of Birth**: Masked as "****-**-**", stored as SHA-256 hash
+- **SSN Last-4**: Masked as "\*\*\*\*", stored as SHA-256 hash with rotating salts
+- **Date of Birth**: Masked as "\***\*-**-\*\*", stored as SHA-256 hash
 - **Addresses**: Street masked, city/state/ZIP preserved for analytics
-- **Email**: Local part masked as "****@****.***", domain optionally preserved
+- **Email**: Local part masked as "\***\*@\*\***.\*\*\*", domain optionally preserved
 - **Income**: Converted to configurable range buckets (e.g., "$50K-$75K")
 
 ### Database-Level Enforcement
@@ -382,11 +391,13 @@ npm run dev
 The conversation logging and pseudonymization system is currently in development. Key implementation areas include:
 
 #### Core Data Structures
+
 - `EventEnvelope` interface with session metadata and payload
 - `EventType` enum supporting all LangGraph event types
 - Pseudonymization engine interfaces with deterministic hashing
 
 #### Implementation Components
+
 - **Pseudonymization Engine**: Deterministic PII masking with rotating salts
 - **Ring Buffer**: Backpressure-controlled event queuing
 - **Event Collector**: Non-blocking asynchronous event processing
@@ -395,6 +406,7 @@ The conversation logging and pseudonymization system is currently in development
 - **Compliance Engine**: Privacy-safe query interfaces
 
 #### Testing Strategy
+
 - Unit tests for pseudonymization determinism and PII masking
 - Integration tests for database enforcement and event processing
 - Performance tests for latency and throughput requirements
@@ -438,19 +450,19 @@ The conversation logging and pseudonymization system is currently in development
 
 ```typescript
 // Counter metrics
-logs_ingested_total
-audit_events_total
-pseudonymization_errors_total
-dropped_debug_fields_total
-storage_outages_total
+logs_ingested_total;
+audit_events_total;
+pseudonymization_errors_total;
+dropped_debug_fields_total;
+storage_outages_total;
 
 // Histogram metrics
-write_latency_ms (p50, p95, p99)
-query_latency_ms (p50, p95, p99)
+write_latency_ms(p50, p95, p99);
+query_latency_ms(p50, p95, p99);
 
 // Status metrics
-backpressure_active
-buffered_events_count
+backpressure_active;
+buffered_events_count;
 ```
 
 ## Deployment

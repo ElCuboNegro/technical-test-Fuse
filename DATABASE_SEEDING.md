@@ -23,7 +23,7 @@ The seeding system manages five core tables:
 
 1. **identity_records**: Stores hashed PII data for identity verification
 2. **contact_information**: Address and contact details
-3. **financial_data**: Employment and income information  
+3. **financial_data**: Employment and income information
 4. **application_data**: Application metadata and status
 5. **test_scenarios**: Scenario definitions and expected outcomes
 
@@ -74,6 +74,7 @@ interface TestScenario {
 ### Identity Verification Data
 
 For identity verification failure scenarios, the system handles both:
+
 - **Provided Data**: What the user provides (incorrect)
 - **Correct Data**: What should be in the database (for verification)
 
@@ -82,6 +83,7 @@ For identity verification failure scenarios, the system handles both:
 ### DatabaseSeeder Class
 
 #### Constructor
+
 ```typescript
 constructor(pool: Pool)
 ```
@@ -89,16 +91,18 @@ constructor(pool: Pool)
 #### Methods
 
 ##### seedAllTables(scenarios, options?)
+
 Seeds all tables with provided scenarios.
 
 ```typescript
 async seedAllTables(
-  scenarios: TestScenario[], 
+  scenarios: TestScenario[],
   options?: SeedingOptions
 ): Promise<SeedingResult[]>
 ```
 
 **Options:**
+
 - `dryRun: boolean` - Preview changes without applying them
 - `batchSize: number` - Number of records to process per batch (default: 100)
 - `skipValidation: boolean` - Skip pre-seeding validation checks
@@ -118,6 +122,7 @@ async seedTestScenarios(scenarios: TestScenario[]): Promise<SeedingResult>
 ### MockDataParser Class
 
 #### parseTestScenarios()
+
 Parses test scenarios from the mock data file.
 
 ```typescript
@@ -127,6 +132,7 @@ async parseTestScenarios(): Promise<TestScenario[]>
 ### DatabaseValidator Class
 
 #### validateConnection(databaseUrl)
+
 Validates database connectivity.
 
 ```typescript
@@ -134,6 +140,7 @@ async validateConnection(databaseUrl: string): Promise<boolean>
 ```
 
 #### validateSchema()
+
 Validates that required tables and indexes exist.
 
 ```typescript
@@ -145,8 +152,8 @@ async validateSchema(): Promise<SchemaValidationResult>
 ### Basic Seeding
 
 ```typescript
-import { Pool } from 'pg';
-import { DatabaseSeeder, MockDataParser } from './src/database/seeding';
+import { Pool } from "pg";
+import { DatabaseSeeder, MockDataParser } from "./src/database/seeding";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const seeder = new DatabaseSeeder(pool);
@@ -165,11 +172,13 @@ console.log(`Seeded ${results.length} tables successfully`);
 // Preview changes without applying them
 const results = await seeder.seedAllTables(scenarios, {
   dryRun: true,
-  batchSize: 50
+  batchSize: 50,
 });
 
-results.forEach(result => {
-  console.log(`Would process ${result.recordsProcessed} records in ${result.tableName}`);
+results.forEach((result) => {
+  console.log(
+    `Would process ${result.recordsProcessed} records in ${result.tableName}`,
+  );
 });
 ```
 
@@ -188,19 +197,19 @@ await seeder.seedContactInformation(scenarios);
 ```typescript
 try {
   const results = await seeder.seedAllTables(scenarios);
-  
+
   // Check for errors
-  const hasErrors = results.some(result => result.errors.length > 0);
+  const hasErrors = results.some((result) => result.errors.length > 0);
   if (hasErrors) {
-    console.error('Seeding completed with errors:');
-    results.forEach(result => {
+    console.error("Seeding completed with errors:");
+    results.forEach((result) => {
       if (result.errors.length > 0) {
-        console.error(`${result.tableName}: ${result.errors.join(', ')}`);
+        console.error(`${result.tableName}: ${result.errors.join(", ")}`);
       }
     });
   }
 } catch (error) {
-  console.error('Seeding failed:', error.message);
+  console.error("Seeding failed:", error.message);
 }
 ```
 
@@ -211,10 +220,12 @@ try {
 The testing suite includes comprehensive coverage at multiple levels:
 
 #### Unit Tests (`tests/unit/`)
+
 - **database-seeding.test.ts**: Core seeding logic and data transformations
 - **database-seeder-logic.test.ts**: Individual seeder methods and error handling
 
 #### Integration Tests (`tests/integration/`)
+
 - **database-seeding.test.ts**: End-to-end seeding workflows with real database
 - **comprehensive-scenarios.test.ts**: Complete scenario validation with data integrity checks
 
@@ -225,37 +236,44 @@ The testing suite includes comprehensive coverage at multiple levels:
 The `comprehensive-scenarios.test.ts` file provides complete end-to-end validation of the entire seeding system with real database operations:
 
 **Successful Verification Scenarios:**
+
 - `successful_verification`: Complete data flow from identity through confirmation
 - `self_employed_applicant`: Null job tenure handling for self-employed users
 - `no_email_provided`: Optional email field validation
 
 **Identity Verification Failure Scenarios:**
+
 - `identity_verification_failure`: Proper storage of correct data for database verification
 - `partial_identity_failure_then_success`: Recovery workflows with attempt tracking
 
 **Special Case Scenarios:**
+
 - `job_tenure_discrepancy`: Employment history mismatches requiring clarification
 - `address_with_unit_clarification`: Complete address collection with unit numbers
 - `recent_job_change`: Job transition scenarios with explanatory data
 
 **Data Integrity and Relationships:**
+
 - Foreign key relationship validation across all tables
 - Scenario type classification verification
 - PII hashing consistency validation
 - Database connection resilience testing
 
 #### Complete Seeding Process
+
 - All tables seeded with mock data scenarios
 - Data integrity across foreign key relationships
 - Scenario type handling (successful, failure, discrepancy cases)
 
 #### Upsert Logic and Duplicate Handling
+
 - Insert operations on first run
 - Update operations on subsequent runs
 - Mixed insert/update scenarios
 - Referential integrity during upserts
 
 #### Individual Table Seeding
+
 - Identity records with hashed PII data
 - Contact information with address validation
 - Financial data with employment information
@@ -263,17 +281,20 @@ The `comprehensive-scenarios.test.ts` file provides complete end-to-end validati
 - Test scenarios with expected outcomes
 
 #### Error Handling and Edge Cases
+
 - Missing optional data scenarios
 - Identity verification failure handling
 - Partial failure recovery workflows
 - Database error rollback scenarios
 
 #### Performance and Batch Processing
+
 - Large dataset efficiency testing
 - Dry run mode validation
 - Configurable batch size handling
 
 #### Comprehensive Scenario Validation
+
 - **Complete Data Flow Testing**: End-to-end validation of all verification scenarios
 - **Identity Verification Flows**: Successful and failed identity verification with proper termination handling
 - **Special Case Scenarios**: Job tenure discrepancies, self-employed applicants, address clarifications
@@ -303,6 +324,7 @@ npm test -- --coverage --testPathPattern=database-seeding
 ```
 
 **Test Configuration Benefits**:
+
 - **Automatic Environment Loading**: No manual environment setup required
 - **Dynamic Database URLs**: Tests automatically use appropriate test databases
 - **Secure Defaults**: Tests run safely even without explicit salt configuration
@@ -330,6 +352,7 @@ The testing system automatically handles environment configuration:
 - **Console Mocking**: Test output is cleaned up by mocking console methods
 
 Example automatic URL construction:
+
 - Main: `postgresql://user:pass@localhost:5432/agents_app_dev`
 - Test: `postgresql://user:pass@localhost:5432/agents_app_test`
 
@@ -355,7 +378,7 @@ The seeder uses configurable batch processing to handle large datasets efficient
 ```typescript
 // Process in smaller batches for memory efficiency
 const results = await seeder.seedAllTables(scenarios, {
-  batchSize: 50  // Process 50 records at a time
+  batchSize: 50, // Process 50 records at a time
 });
 ```
 
@@ -366,15 +389,16 @@ Uses PostgreSQL connection pooling for optimal database performance:
 ```typescript
 const pool = new Pool({
   connectionString: databaseUrl,
-  max: 10,                    // Maximum connections
+  max: 10, // Maximum connections
   connectionTimeoutMillis: 5000,
-  idleTimeoutMillis: 30000
+  idleTimeoutMillis: 30000,
 });
 ```
 
 ### Transaction Management
 
 All seeding operations use database transactions for consistency:
+
 - Automatic rollback on errors
 - Batch commits for performance
 - Foreign key constraint handling
@@ -384,27 +408,35 @@ All seeding operations use database transactions for consistency:
 ### Common Issues
 
 #### Connection Errors
+
 ```
 Error: connect ECONNREFUSED 127.0.0.1:5432
 ```
+
 **Solution**: Ensure PostgreSQL is running and DATABASE_URL is correct.
 
 #### Missing Tables
+
 ```
 Error: relation "identity_records" does not exist
 ```
+
 **Solution**: Run database migrations first: `npm run migrate`
 
 #### Foreign Key Violations
+
 ```
 Error: insert or update on table violates foreign key constraint
 ```
+
 **Solution**: Ensure identity_records are seeded before dependent tables.
 
 #### Hash Salt Errors
+
 ```
 Error: DOB_SALT environment variable is required
 ```
+
 **Solution**: Set DOB_SALT and SSN_SALT environment variables in your `.env` file. For testing, the system provides secure fallback values automatically.
 
 ### Debug Mode
@@ -413,8 +445,8 @@ Enable verbose logging for troubleshooting:
 
 ```typescript
 const results = await seeder.seedAllTables(scenarios, {
-  dryRun: true,  // Preview operations
-  skipValidation: false  // Run all validation checks
+  dryRun: true, // Preview operations
+  skipValidation: false, // Run all validation checks
 });
 ```
 

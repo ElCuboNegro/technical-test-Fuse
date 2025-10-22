@@ -15,14 +15,21 @@
   - Create TypeScript interfaces for PseudonymizationEngine, DatabasePseudonymizationEngine, ConversationLogger, AsyncBuffer, StorageAdapter, and ComplianceEngine
   - _Requirements: 8.1, 8.2_
 
-- [ ] 2. Implement pseudonymization engine with deterministic hashing
+- [x] 2. Implement pseudonymization engine with deterministic hashing
+
+
+
+
+
   - Create PseudonymizationEngine class with methods for maskSSN, maskDOB, maskEmail, bucketIncome
   - Implement deterministic hashing using SHA-256 with rotating salts from KMS
   - Add fail-closed error handling that masks entire fields with "[REDACTED]" on failure
   - Implement salt rotation logic with dual-read compatibility
   - _Requirements: 1.1, 1.4, 1.5, 6.1, 6.2, 6.3, 6.4, 6.5, 7.5_
 
-- [ ] 2.1 Write unit tests for pseudonymization engine
+- [x] 2.1 Write unit tests for pseudonymization engine
+
+
   - Test deterministic hashing produces same output for same input with same salt
   - Test all PII masking methods (SSN, DOB, email, income bucketing)
   - Test fail-closed behavior when pseudonymization fails
