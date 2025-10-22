@@ -13,7 +13,8 @@
       "disabled": false,
       "autoApprove": [
         "check_compatibility",
-        "resolve-library-id"
+        "resolve-library-id",
+        "get-library-docs"
       ]
     },
     "aws-docs": {

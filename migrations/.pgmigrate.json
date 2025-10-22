@@ -1,0 +1,9 @@
+{
+  "migrationsTable": "pgmigrations",
+  "migrationsDir": "migrations",
+  "schema": "public",
+  "createSchema": false,
+  "checkOrder": true,
+  "verbose": true,
+  "migrationFileLanguage": "sql"
+}

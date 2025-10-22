@@ -80,7 +80,14 @@ services:
       - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
       - ./docker/redis/redis-dev.conf:/usr/local/etc/redis/redis-dev.conf:ro
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-dev_redis_secure_password_2024}", "ping"]
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "-a",
+          "${REDIS_PASSWORD:-dev_redis_secure_password_2024}",
+          "ping",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
