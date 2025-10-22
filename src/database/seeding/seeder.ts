@@ -74,7 +74,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
           // Create hashed identity
           const hashedIdentity = this.hasher.createHashedIdentity(identityData, scenario.scenario_name);
 
-          // Insert or update record
+          // Use a more reliable upsert with xmax to detect insert vs update
           const insertResult = await client.query(`
             INSERT INTO identity_records (external_ref, name, dob, dob_hash, ssn4_hash)
             VALUES ($1, $2, $3, $4, $5)
@@ -84,7 +84,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
               dob_hash = EXCLUDED.dob_hash,
               ssn4_hash = EXCLUDED.ssn4_hash,
               updated_at = NOW()
-            RETURNING id, external_ref
+            RETURNING id, external_ref, (xmax = 0) AS inserted
           `, [
             scenario.scenario_name,
             scenario.applicant_data.name,
@@ -93,7 +93,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
             hashedIdentity.ssnLast4Hash
           ]);
 
-          if (insertResult.rowCount === 1) {
+          if (insertResult.rows[0].inserted) {
             result.recordsInserted++;
           } else {
             result.recordsUpdated++;
@@ -166,7 +166,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
               zip_code = EXCLUDED.zip_code,
               email = EXCLUDED.email,
               updated_at = NOW()
-            RETURNING id, external_ref
+            RETURNING id, external_ref, (xmax = 0) AS inserted
           `, [
             scenario.scenario_name,
             contactData.street_address,
@@ -177,7 +177,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
             contactData.email
           ]);
 
-          if (insertResult.rowCount === 1) {
+          if (insertResult.rows[0].inserted) {
             result.recordsInserted++;
           } else {
             result.recordsUpdated++;
@@ -249,7 +249,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
               application_job_tenure = EXCLUDED.application_job_tenure,
               job_change_reason = EXCLUDED.job_change_reason,
               updated_at = NOW()
-            RETURNING id, external_ref
+            RETURNING id, external_ref, (xmax = 0) AS inserted
           `, [
             scenario.scenario_name,
             financialData.monthly_income,
@@ -259,7 +259,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
             financialData.job_change_reason
           ]);
 
-          if (insertResult.rowCount === 1) {
+          if (insertResult.rows[0].inserted) {
             result.recordsInserted++;
           } else {
             result.recordsUpdated++;
@@ -333,7 +333,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
               notes = EXCLUDED.notes,
               metadata = EXCLUDED.metadata,
               updated_at = NOW()
-            RETURNING id, external_ref
+            RETURNING id, external_ref, (xmax = 0) AS inserted
           `, [
             scenario.scenario_name,
             applicationId,
@@ -342,7 +342,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
             JSON.stringify(metadata)
           ]);
 
-          if (insertResult.rowCount === 1) {
+          if (insertResult.rows[0].inserted) {
             result.recordsInserted++;
           } else {
             result.recordsUpdated++;
@@ -410,7 +410,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
               failure_reason = EXCLUDED.failure_reason,
               applicant_name = EXCLUDED.applicant_name,
               updated_at = NOW()
-            RETURNING id, scenario_name
+            RETURNING id, scenario_name, (xmax = 0) AS inserted
           `, [
             scenario.scenario_name,
             scenario.description,
@@ -421,7 +421,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
             scenario.applicant_data.name
           ]);
 
-          if (insertResult.rowCount === 1) {
+          if (insertResult.rows[0].inserted) {
             result.recordsInserted++;
           } else {
             result.recordsUpdated++;
@@ -450,6 +450,7 @@ export class DatabaseSeeder implements IDatabaseSeeder {
 
     if (options.dryRun) {
       console.log('🔍 DRY RUN MODE - No data will be committed');
+      return this.performDryRun(scenarios, options);
     }
 
     const results: SeedingResult[] = [];
@@ -510,6 +511,72 @@ export class DatabaseSeeder implements IDatabaseSeeder {
       throw error;
     }
 
+    return results;
+  }
+
+  /**
+   * Perform dry run simulation without database changes
+   */
+  private async performDryRun(scenarios: TestScenario[], options: SeedingOptions): Promise<SeedingResult[]> {
+    const results: SeedingResult[] = [];
+
+    console.log('\n🔍 DRY RUN - Simulating database operations...');
+
+    // Simulate each table seeding
+    const tableNames = ['identity_records', 'contact_information', 'financial_data', 'application_data', 'test_scenarios'];
+    
+    for (const tableName of tableNames) {
+      const result: SeedingResult = {
+        tableName,
+        recordsProcessed: 0,
+        recordsInserted: 0,
+        recordsUpdated: 0,
+        errors: []
+      };
+
+      console.log(`\n📋 Would seed ${tableName}...`);
+
+      for (const scenario of scenarios) {
+        try {
+          result.recordsProcessed++;
+
+          // Simulate validation based on table type
+          switch (tableName) {
+            case 'identity_records':
+              const identityData = this.parser.extractIdentityData(scenario);
+              const validation = this.hasher.validateIdentityData(identityData);
+              if (!validation.isValid) {
+                result.errors.push(`Invalid identity data for ${scenario.scenario_name}: ${validation.errors.join(', ')}`);
+                continue;
+              }
+              break;
+            case 'contact_information':
+              if (!scenario.applicant_data.mailing_address && !scenario.applicant_data.complete_address) {
+                continue; // Skip scenarios without contact data
+              }
+              this.parser.extractContactData(scenario);
+              break;
+            case 'financial_data':
+              if (scenario.applicant_data.monthly_income === undefined) {
+                continue; // Skip scenarios without financial data
+              }
+              this.parser.extractFinancialData(scenario);
+              break;
+          }
+
+          // Simulate insert (all would be inserts in dry run)
+          result.recordsInserted++;
+
+        } catch (error) {
+          result.errors.push(`Would fail to seed ${tableName} for ${scenario.scenario_name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      console.log(`📊 Would process ${result.recordsProcessed} records, insert ${result.recordsInserted}, errors: ${result.errors.length}`);
+      results.push(result);
+    }
+
+    console.log('\n✅ DRY RUN completed - No actual changes made to database');
     return results;
   }
 

@@ -98,6 +98,32 @@ await seeder.seedFinancialData(scenarios);
 
 ## Testing Infrastructure
 
+### Test Configuration
+
+The testing system uses a sophisticated configuration setup that automatically loads environment variables and provides intelligent fallbacks:
+
+- **Environment Loading**: Automatically loads `.env` file configuration using dotenv
+- **Dynamic Database URLs**: Constructs test database URLs from the base DATABASE_URL
+- **Security Fallbacks**: Provides secure default values for test salts when not specified
+- **Console Mocking**: Reduces test noise by mocking console output methods
+
+### Test Environment Setup
+
+The Jest configuration (`tests/setup/jest.setup.ts`) provides:
+
+```typescript
+// Automatic environment variable loading
+dotenv.config();
+
+// Intelligent database URL handling
+const baseUrl = process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev';
+const testDbUrl = baseUrl.replace('/agents_app_dev', '/agents_app_test');
+
+// Security with fallbacks
+process.env.SSN_SALT = process.env.SSN_SALT || 'test-ssn-salt-12345';
+process.env.DOB_SALT = process.env.DOB_SALT || 'test-dob-salt-67890';
+```
+
 ### Test Coverage
 
 The project includes comprehensive testing at multiple levels:
@@ -108,27 +134,41 @@ The project includes comprehensive testing at multiple levels:
 - **Database Validation**: Connection and schema validation utilities
 
 #### Integration Tests
+- **Comprehensive Scenarios**: Complete end-to-end testing of all verification scenarios with real database operations
 - **Complete Seeding Process**: End-to-end seeding workflows with all mock data scenarios
+- **Data Integrity Validation**: Foreign key relationships and referential integrity across all tables
 - **Upsert Logic**: Insert/update operations and duplicate handling
-- **Foreign Key Relationships**: Referential integrity across all tables
 - **Error Handling**: Database errors, rollback scenarios, and edge cases
 - **Performance Testing**: Large dataset handling and batch processing efficiency
+- **PII Security Validation**: Hash consistency and secure data handling verification
 
 ### Test Scenarios
 
 The system supports comprehensive test scenarios including:
 
-1. **successful_verification**: Standard employed applicant flow
-2. **identity_verification_failure**: Multiple failed identity attempts
-3. **job_tenure_discrepancy**: Employment history mismatches
-4. **self_employed_applicant**: Variable income handling
-5. **address_clarification**: Unit number collection scenarios
-6. **partial_identity_failure_then_success**: Recovery workflows
+1. **successful_verification**: Standard employed applicant flow with complete data validation
+2. **identity_verification_failure**: Multiple failed identity attempts with proper termination
+3. **job_tenure_discrepancy**: Employment history mismatches requiring clarification
+4. **self_employed_applicant**: Variable income handling with null job tenure
+5. **address_with_unit_clarification**: Unit number collection and address completion
+6. **partial_identity_failure_then_success**: Recovery workflows with attempt tracking
+7. **no_email_provided**: Optional email handling scenarios
+8. **recent_job_change**: Job transition scenarios with explanatory data
+
+#### Comprehensive Integration Testing
+
+The `comprehensive-scenarios.test.ts` file provides complete end-to-end validation:
+
+- **Successful Verification Flows**: Tests complete data flow from identity verification through final confirmation
+- **Identity Failure Scenarios**: Validates proper handling of verification failures and professional termination
+- **Special Case Handling**: Tests job tenure discrepancies, address clarifications, and self-employed scenarios
+- **Data Integrity Validation**: Ensures foreign key relationships and PII hashing consistency
+- **Database Connection Resilience**: Graceful handling when database is unavailable
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (automatically loads .env configuration)
 npm test
 
 # Run unit tests only
@@ -142,7 +182,19 @@ npm run test:coverage
 
 # Run specific test file
 npm test -- tests/integration/database-seeding.test.ts
+
+# Run comprehensive scenario tests
+npm test -- tests/integration/comprehensive-scenarios.test.ts
+
+# Run tests with database connection validation
+npm test -- --testNamePattern="Comprehensive Test Scenarios"
 ```
+
+**Test Environment Notes**:
+- Tests automatically load environment variables from `.env` file
+- Test database URLs are dynamically constructed from your main DATABASE_URL
+- Security salts use secure fallbacks if not specified in environment
+- Console output is mocked to reduce test noise
 
 ## Database Setup
 
@@ -159,13 +211,18 @@ npm test -- tests/integration/database-seeding.test.ts
 cp .env.example .env
 
 # Configure database URLs
-DATABASE_URL=postgresql://user:password@localhost:5432/agents_app
-TEST_DATABASE_URL=postgresql://test:test@localhost:5433/agents_app_test
+DATABASE_URL=postgresql://user:password@localhost:5432/agents_app_dev
 
-# Security salts for PII hashing
+# Security salts for PII hashing (optional - tests provide fallbacks)
 DOB_SALT=your-dob-salt-here
 SSN_SALT=your-ssn-salt-here
 ```
+
+**Note**: The test system automatically constructs test database URLs from your main DATABASE_URL by replacing the database name with `_test` suffix. For example:
+- Main: `postgresql://user:pass@localhost:5432/agents_app_dev`
+- Test: `postgresql://user:pass@localhost:5432/agents_app_test`
+
+Security salts are optional for testing - the system provides secure fallback values when not specified.
 
 ### Database Migration
 

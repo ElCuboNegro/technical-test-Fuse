@@ -216,8 +216,33 @@ The testing suite includes comprehensive coverage at multiple levels:
 
 #### Integration Tests (`tests/integration/`)
 - **database-seeding.test.ts**: End-to-end seeding workflows with real database
+- **comprehensive-scenarios.test.ts**: Complete scenario validation with data integrity checks
 
 ### Test Categories
+
+#### Comprehensive Scenario Integration Tests
+
+The `comprehensive-scenarios.test.ts` file provides complete end-to-end validation of the entire seeding system with real database operations:
+
+**Successful Verification Scenarios:**
+- `successful_verification`: Complete data flow from identity through confirmation
+- `self_employed_applicant`: Null job tenure handling for self-employed users
+- `no_email_provided`: Optional email field validation
+
+**Identity Verification Failure Scenarios:**
+- `identity_verification_failure`: Proper storage of correct data for database verification
+- `partial_identity_failure_then_success`: Recovery workflows with attempt tracking
+
+**Special Case Scenarios:**
+- `job_tenure_discrepancy`: Employment history mismatches requiring clarification
+- `address_with_unit_clarification`: Complete address collection with unit numbers
+- `recent_job_change`: Job transition scenarios with explanatory data
+
+**Data Integrity and Relationships:**
+- Foreign key relationship validation across all tables
+- Scenario type classification verification
+- PII hashing consistency validation
+- Database connection resilience testing
 
 #### Complete Seeding Process
 - All tables seeded with mock data scenarios
@@ -248,10 +273,17 @@ The testing suite includes comprehensive coverage at multiple levels:
 - Dry run mode validation
 - Configurable batch size handling
 
+#### Comprehensive Scenario Validation
+- **Complete Data Flow Testing**: End-to-end validation of all verification scenarios
+- **Identity Verification Flows**: Successful and failed identity verification with proper termination handling
+- **Special Case Scenarios**: Job tenure discrepancies, self-employed applicants, address clarifications
+- **Data Integrity Validation**: Foreign key relationships and PII hashing consistency across all scenarios
+- **Database Resilience**: Graceful handling when database connections are unavailable
+
 ### Running Tests
 
 ```bash
-# Run all seeding tests
+# Run all seeding tests (automatically loads .env configuration)
 npm test -- --testPathPattern=database-seeding
 
 # Run unit tests only
@@ -260,23 +292,46 @@ npm test tests/unit/database-seeding.test.ts
 # Run integration tests only
 npm test tests/integration/database-seeding.test.ts
 
+# Run comprehensive scenario tests
+npm test tests/integration/comprehensive-scenarios.test.ts
+
+# Run all integration tests
+npm test -- --testPathPattern=integration
+
 # Run with coverage
 npm test -- --coverage --testPathPattern=database-seeding
 ```
+
+**Test Configuration Benefits**:
+- **Automatic Environment Loading**: No manual environment setup required
+- **Dynamic Database URLs**: Tests automatically use appropriate test databases
+- **Secure Defaults**: Tests run safely even without explicit salt configuration
+- **Clean Output**: Console mocking reduces test noise for better readability
 
 ## Configuration
 
 ### Environment Variables
 
 ```bash
-# Database connections
-DATABASE_URL=postgresql://user:password@localhost:5432/agents_app
-TEST_DATABASE_URL=postgresql://test:test@localhost:5433/agents_app_test
+# Primary database connection
+DATABASE_URL=postgresql://user:password@localhost:5432/agents_app_dev
 
-# Security salts for PII hashing
+# Security salts for PII hashing (optional for testing)
 DOB_SALT=your-unique-dob-salt-here
 SSN_SALT=your-unique-ssn-salt-here
 ```
+
+**Automatic Test Configuration**:
+The testing system automatically handles environment configuration:
+
+- **Environment Loading**: Tests automatically load `.env` file using dotenv
+- **Dynamic Test URLs**: Test database URLs are constructed from DATABASE_URL by replacing the database name with `_test` suffix
+- **Security Fallbacks**: When DOB_SALT or SSN_SALT are not provided, secure test defaults are used
+- **Console Mocking**: Test output is cleaned up by mocking console methods
+
+Example automatic URL construction:
+- Main: `postgresql://user:pass@localhost:5432/agents_app_dev`
+- Test: `postgresql://user:pass@localhost:5432/agents_app_test`
 
 ### Database Setup
 
@@ -350,7 +405,7 @@ Error: insert or update on table violates foreign key constraint
 ```
 Error: DOB_SALT environment variable is required
 ```
-**Solution**: Set DOB_SALT and SSN_SALT environment variables.
+**Solution**: Set DOB_SALT and SSN_SALT environment variables in your `.env` file. For testing, the system provides secure fallback values automatically.
 
 ### Debug Mode
 

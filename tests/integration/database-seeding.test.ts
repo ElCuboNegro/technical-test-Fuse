@@ -22,7 +22,7 @@ describe('Database Seeding Integration Tests', () => {
 
   beforeAll(async () => {
     // Use test database URL
-    const testDatabaseUrl = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5433/agents_app_test';
+    const testDatabaseUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev';
     
     pool = new Pool({
       connectionString: testDatabaseUrl,
@@ -174,6 +174,14 @@ describe('Database Seeding Integration Tests', () => {
       const results = await seeder.seedAllTables(testScenarios);
 
       // Verify records were updated, not inserted
+      // At least identity_records should have updates since all scenarios have identity data
+      const identityResult = results.find(r => r.tableName === 'identity_records');
+      expect(identityResult).toBeDefined();
+      expect(identityResult!.recordsProcessed).toBeGreaterThan(0);
+      expect(identityResult!.recordsUpdated).toBeGreaterThan(0);
+      expect(identityResult!.recordsInserted).toBe(0);
+
+      // Other tables should either have updates or no records processed
       results.forEach(result => {
         if (result.recordsProcessed > 0) {
           expect(result.recordsUpdated).toBeGreaterThan(0);
@@ -317,8 +325,8 @@ describe('Database Seeding Integration Tests', () => {
         expect(record.status).toBeDefined();
         expect(record.metadata).toBeDefined();
         
-        // Verify metadata is valid JSON
-        const metadata = JSON.parse(record.metadata);
+        // Verify metadata is valid JSON (JSONB columns return objects directly)
+        const metadata = typeof record.metadata === 'string' ? JSON.parse(record.metadata) : record.metadata;
         expect(metadata.test).toBe(true);
         expect(metadata.scenario).toBeDefined();
       } finally {
@@ -345,8 +353,8 @@ describe('Database Seeding Integration Tests', () => {
         expect(record.scenario_type).toBeDefined();
         expect(record.expected_flow).toBeDefined();
         
-        // Verify expected_flow is valid JSON array
-        const expectedFlow = JSON.parse(record.expected_flow);
+        // Verify expected_flow is valid JSON array (JSONB columns return objects directly)
+        const expectedFlow = typeof record.expected_flow === 'string' ? JSON.parse(record.expected_flow) : record.expected_flow;
         expect(Array.isArray(expectedFlow)).toBe(true);
       } finally {
         client.release();
@@ -388,7 +396,9 @@ describe('Database Seeding Integration Tests', () => {
         const record = identityRecord.rows[0];
         
         // Should use correct_date_of_birth for seeding
-        expect(record.dob).toBe(failureScenario!.applicant_data.correct_date_of_birth);
+        // Convert database date to string for comparison
+        const dbDate = record.dob instanceof Date ? record.dob.toISOString().split('T')[0] : record.dob;
+        expect(dbDate).toBe(failureScenario!.applicant_data.correct_date_of_birth);
       } finally {
         client.release();
       }
@@ -446,6 +456,19 @@ describe('Database Seeding Integration Tests', () => {
     });
 
     test('should support dry run mode', async () => {
+      // Ensure clean database before dry run test
+      await cleanupTestData();
+      
+      // Get initial count
+      const client = await pool.connect();
+      let initialCount: number;
+      try {
+        const countResult = await client.query('SELECT COUNT(*) FROM identity_records');
+        initialCount = parseInt(countResult.rows[0].count);
+      } finally {
+        client.release();
+      }
+
       const results = await seeder.seedAllTables(testScenarios, {
         dryRun: true,
         batchSize: 100,
@@ -455,13 +478,14 @@ describe('Database Seeding Integration Tests', () => {
       // Dry run should process scenarios but not insert records
       expect(results).toHaveLength(5);
       
-      // Verify no actual data was inserted
-      const client = await pool.connect();
+      // Verify no actual data was inserted (count should remain the same)
+      const client2 = await pool.connect();
       try {
-        const identityCount = await client.query('SELECT COUNT(*) FROM identity_records');
-        expect(parseInt(identityCount.rows[0].count)).toBe(0);
+        const finalCountResult = await client2.query('SELECT COUNT(*) FROM identity_records');
+        const finalCount = parseInt(finalCountResult.rows[0].count);
+        expect(finalCount).toBe(initialCount);
       } finally {
-        client.release();
+        client2.release();
       }
     });
   });

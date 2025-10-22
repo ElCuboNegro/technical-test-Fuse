@@ -16,7 +16,7 @@ describe('CLI Integration Tests', () => {
 
   beforeAll(async () => {
     // Use test database URL
-    const testDatabaseUrl = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5433/agents_app_test';
+    const testDatabaseUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev';
     
     pool = new Pool({
       connectionString: testDatabaseUrl,
@@ -57,14 +57,14 @@ describe('CLI Integration Tests', () => {
     exitCode: number;
   }> => {
     return new Promise((resolve, reject) => {
-      const child = spawn('node', ['-r', 'ts-node/register', cliPath, ...args], {
+      const child = spawn('node', ['test-cli-runner.js', cliPath, ...args], {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { 
           ...process.env, 
           NODE_ENV: 'test',
-          TEST_DATABASE_URL: process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5433/agents_app_test',
-          SSN_SALT: 'test_salt_integration',
-          DOB_SALT: 'test_salt_integration'
+          TEST_DATABASE_URL: process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || 'postgresql://dev_user:dev_password@localhost:5432/agents_app_dev',
+          SSN_SALT: process.env.SSN_SALT || 'test_salt_integration',
+          DOB_SALT: process.env.DOB_SALT || 'test_salt_integration'
         }
       });
 

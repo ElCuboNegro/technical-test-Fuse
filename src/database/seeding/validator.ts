@@ -64,9 +64,9 @@ export class DatabaseValidator implements IDatabaseValidator {
       const requiredIndexes = [
         'idx_identity_records_ref',
         'idx_identity_records_combo',
-        'idx_contact_info_ref',
-        'idx_financial_data_ref',
-        'idx_application_data_ref',
+        'idx_contact_external_ref',
+        'idx_financial_external_ref',
+        'idx_application_external_ref',
         'idx_test_scenarios_name'
       ];
 
@@ -180,10 +180,10 @@ export class DatabaseValidator implements IDatabaseValidator {
     // Define required columns for each table
     const requiredColumns = {
       identity_records: ['id', 'external_ref', 'name', 'dob', 'dob_hash', 'ssn4_hash', 'created_at', 'updated_at'],
-      contact_information: ['id', 'external_ref', 'street', 'city', 'state', 'zip_code', 'created_at', 'updated_at'],
+      contact_information: ['id', 'external_ref', 'street_address', 'city', 'state', 'zip_code', 'created_at', 'updated_at'],
       financial_data: ['id', 'external_ref', 'monthly_income', 'employment_status', 'created_at', 'updated_at'],
-      application_data: ['id', 'external_ref', 'created_at', 'updated_at'],
-      test_scenarios: ['id', 'scenario_name', 'description', 'expected_flow', 'expected_outcome', 'created_at', 'updated_at']
+      application_data: ['id', 'external_ref', 'application_id', 'status', 'metadata', 'created_at', 'updated_at'],
+      test_scenarios: ['id', 'scenario_name', 'description', 'expected_flow', 'expected_outcome', 'scenario_type', 'created_at', 'updated_at']
     };
 
     for (const [tableName, columns] of Object.entries(requiredColumns)) {

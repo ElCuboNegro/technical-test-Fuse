@@ -56,7 +56,7 @@ describe('Database Seeder Logic Tests', () => {
       // Mock successful database operations
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario' }] }) // INSERT
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario', inserted: true }] }) // INSERT
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedIdentityRecords(testScenarios.slice(0, 1));
@@ -82,7 +82,7 @@ describe('Database Seeder Logic Tests', () => {
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'identity_verification_failure' }] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'identity_verification_failure', inserted: true }] })
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedIdentityRecords([failureScenario!]);
@@ -92,7 +92,7 @@ describe('Database Seeder Logic Tests', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify the correct identity data was used (not the provided incorrect data)
-      const insertCall = mockClient.query.mock.calls.find(call => 
+      const insertCall = mockClient.query.mock.calls.find(call =>
         call[0] && call[0].includes('INSERT INTO identity_records')
       );
       expect(insertCall).toBeDefined();
@@ -150,7 +150,7 @@ describe('Database Seeder Logic Tests', () => {
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario' }] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario', inserted: true }] })
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedContactInformation([scenarioWithContact!]);
@@ -190,7 +190,7 @@ describe('Database Seeder Logic Tests', () => {
       if (unitScenario) {
         mockClient.query
           .mockResolvedValueOnce(undefined) // BEGIN
-          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: unitScenario.scenario_name }] })
+          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: unitScenario.scenario_name, inserted: true }] })
           .mockResolvedValueOnce(undefined); // COMMIT
 
         const result = await seeder.seedContactInformation([unitScenario]);
@@ -199,7 +199,7 @@ describe('Database Seeder Logic Tests', () => {
         expect(result.recordsInserted).toBe(1);
 
         // Verify complete address data was used
-        const insertCall = mockClient.query.mock.calls.find(call => 
+        const insertCall = mockClient.query.mock.calls.find(call =>
           call[0] && call[0].includes('INSERT INTO contact_information')
         );
         expect(insertCall).toBeDefined();
@@ -215,7 +215,7 @@ describe('Database Seeder Logic Tests', () => {
 
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario' }] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario', inserted: true }] })
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedFinancialData([scenarioWithFinancial!]);
@@ -231,7 +231,7 @@ describe('Database Seeder Logic Tests', () => {
       if (selfEmployedScenario) {
         mockClient.query
           .mockResolvedValueOnce(undefined) // BEGIN
-          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: selfEmployedScenario.scenario_name }] })
+          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: selfEmployedScenario.scenario_name, inserted: true }] })
           .mockResolvedValueOnce(undefined); // COMMIT
 
         const result = await seeder.seedFinancialData([selfEmployedScenario]);
@@ -240,7 +240,7 @@ describe('Database Seeder Logic Tests', () => {
         expect(result.recordsInserted).toBe(1);
 
         // Verify self-employed status was preserved
-        const insertCall = mockClient.query.mock.calls.find(call => 
+        const insertCall = mockClient.query.mock.calls.find(call =>
           call[0] && call[0].includes('INSERT INTO financial_data')
         );
         expect(insertCall).toBeDefined();
@@ -276,7 +276,7 @@ describe('Database Seeder Logic Tests', () => {
     test('should process application data correctly', async () => {
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario' }] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: 'test-scenario', inserted: true }] })
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedApplicationData(testScenarios.slice(0, 1));
@@ -287,11 +287,11 @@ describe('Database Seeder Logic Tests', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify metadata structure
-      const insertCall = mockClient.query.mock.calls.find(call => 
+      const insertCall = mockClient.query.mock.calls.find(call =>
         call[0] && call[0].includes('INSERT INTO application_data')
       );
       expect(insertCall).toBeDefined();
-      
+
       const metadata = JSON.parse(insertCall![1][4]); // metadata is 5th parameter
       expect(metadata.test).toBe(true);
       expect(metadata.scenario).toBeDefined();
@@ -303,7 +303,7 @@ describe('Database Seeder Logic Tests', () => {
       if (failureScenario) {
         mockClient.query
           .mockResolvedValueOnce(undefined) // BEGIN
-          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: failureScenario.scenario_name }] })
+          .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', external_ref: failureScenario.scenario_name, inserted: true }] })
           .mockResolvedValueOnce(undefined); // COMMIT
 
         const result = await seeder.seedApplicationData([failureScenario]);
@@ -312,7 +312,7 @@ describe('Database Seeder Logic Tests', () => {
         expect(result.recordsInserted).toBe(1);
 
         // Verify status is set to 'rejected' for failure scenarios
-        const insertCall = mockClient.query.mock.calls.find(call => 
+        const insertCall = mockClient.query.mock.calls.find(call =>
           call[0] && call[0].includes('INSERT INTO application_data')
         );
         expect(insertCall).toBeDefined();
@@ -325,7 +325,7 @@ describe('Database Seeder Logic Tests', () => {
     test('should process test scenarios correctly', async () => {
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', scenario_name: 'test-scenario' }] })
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'test-id', scenario_name: 'test-scenario', inserted: true }] })
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedTestScenarios(testScenarios.slice(0, 1));
@@ -336,11 +336,11 @@ describe('Database Seeder Logic Tests', () => {
       expect(result.errors).toHaveLength(0);
 
       // Verify expected_flow is stored as JSON
-      const insertCall = mockClient.query.mock.calls.find(call => 
+      const insertCall = mockClient.query.mock.calls.find(call =>
         call[0] && call[0].includes('INSERT INTO test_scenarios')
       );
       expect(insertCall).toBeDefined();
-      
+
       const expectedFlow = JSON.parse(insertCall![1][4]); // expected_flow is 5th parameter
       expect(Array.isArray(expectedFlow)).toBe(true);
     });
@@ -365,7 +365,7 @@ describe('Database Seeder Logic Tests', () => {
 
           await seeder.seedTestScenarios([scenario]);
 
-          const insertCall = mockClient.query.mock.calls.find(call => 
+          const insertCall = mockClient.query.mock.calls.find(call =>
             call[0] && call[0].includes('INSERT INTO test_scenarios')
           );
           expect(insertCall).toBeDefined();
@@ -449,7 +449,7 @@ describe('Database Seeder Logic Tests', () => {
       // First call - simulate insert (rowCount = 1, new record)
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'new-id', external_ref: 'test-scenario' }] }) // INSERT
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'new-id', external_ref: 'test-scenario', inserted: true }] }) // INSERT
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const firstResult = await seeder.seedIdentityRecords(testScenarios.slice(0, 1));
@@ -462,13 +462,15 @@ describe('Database Seeder Logic Tests', () => {
       // In real implementation, ON CONFLICT DO UPDATE would be used
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'existing-id', external_ref: 'test-scenario' }] }) // UPDATE
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'existing-id', external_ref: 'test-scenario', inserted: false }] }) // UPDATE
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const secondResult = await seeder.seedIdentityRecords(testScenarios.slice(0, 1));
       // Note: The actual upsert logic would need to track whether it's insert or update
       // This test verifies the structure supports both operations
       expect(secondResult.recordsProcessed).toBe(1);
+      expect(secondResult.recordsUpdated).toBe(1);
+      expect(secondResult.recordsInserted).toBe(0);
     });
   });
 
@@ -490,9 +492,9 @@ describe('Database Seeder Logic Tests', () => {
       // Mix of successful and failed operations
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'success-1' }] }) // First record succeeds
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'success-1', inserted: true }] }) // First record succeeds
         .mockRejectedValueOnce(new Error('Duplicate key')) // Second record fails
-        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'success-2' }] }) // Third record succeeds
+        .mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 'success-2', inserted: true }] }) // Third record succeeds
         .mockResolvedValueOnce(undefined); // COMMIT
 
       const result = await seeder.seedIdentityRecords(testScenarios.slice(0, 3));
@@ -505,7 +507,7 @@ describe('Database Seeder Logic Tests', () => {
 
     test('should handle connection pool errors', async () => {
       // Mock pool connection failure
-      mockPool.connect.mockRejectedValueOnce(new Error('Connection pool exhausted'));
+      (mockPool.connect as jest.MockedFunction<typeof mockPool.connect>).mockRejectedValueOnce(new Error('Connection pool exhausted'));
 
       await expect(seeder.seedIdentityRecords(testScenarios.slice(0, 1)))
         .rejects.toThrow('Connection pool exhausted');

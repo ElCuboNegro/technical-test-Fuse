@@ -235,7 +235,8 @@ async function main() {
 
     // Production safety check
     if (environment === 'production') {
-      const dbName = dbManager.getDatabaseName(environment);
+      const dbUrl = dbManager.getDatabaseUrl(environment);
+      const dbName = new URL(dbUrl).pathname.slice(1); // Remove leading slash
       if (dbName.includes('prod') || dbName.includes('production')) {
         console.log('\n⚠️  WARNING: You are about to modify a PRODUCTION database!');
         console.log(`Database: ${dbName}`);
@@ -547,7 +548,7 @@ async function cleanDatabase(pool: any, dryRun: boolean, verbose: boolean, progr
         DELETE FROM ${tableName} 
         WHERE external_ref LIKE '%test%' 
            OR external_ref LIKE '%scenario%'
-           OR (created_at > NOW() - INTERVAL '1 day' AND external_ref ~ '^[a-z_]+$')$')$')
+           OR (created_at > NOW() - INTERVAL '1 day' AND external_ref ~ '^[a-z_]+_[0-9]+$')$')$')$')
       `);
 
       const deletedCount = result.rowCount || 0;
