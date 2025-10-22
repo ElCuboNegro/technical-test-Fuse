@@ -68,6 +68,8 @@
   - Implement exponential backoff retry logic for failed operations
   - _Requirements: 2.1, 2.4, 5.4, 5.5_
 
+
+
 - [ ] 4.1 Write unit tests for event collector
   - Test non-blocking event acceptance for all EventType values
   - Test duplicate event detection and handling
