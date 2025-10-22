@@ -70,7 +70,12 @@
 
 
 
-- [ ] 4.1 Write unit tests for event collector
+- [x] 4.1 Write unit tests for event collector
+
+
+
+
+
 
 
 
@@ -83,7 +88,10 @@
   - Test that collector never blocks calling code
   - _Requirements: 2.1, 2.4, 5.4, 5.5_
 
-- [ ] 5. Create database schema with pseudonymization enforcement
+- [-] 5. Create database schema with pseudonymization enforcement
+
+
+
   - Create conversation_events table with JSONB payload column and unique constraints
   - Create audit_events table with immutable triggers (prevent UPDATE/DELETE)
   - Create graph_nodes and graph_edges tables for visualization
