@@ -12,8 +12,8 @@ export * from './pseudonymization-engine';
 // Conversation logger interface
 export * from './conversation-logger';
 
-// Async buffer interface
-export * from './async-buffer';
+// Redis event queue interface
+export * from './redis-event-queue';
 
 // Storage adapter interface
 export * from './storage-adapter';
