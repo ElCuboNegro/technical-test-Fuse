@@ -1,0 +1,139 @@
+{
+  "description": "Contact information collection with multi-unit address detection and unit number collection",
+  "scenario": "multi_unit",
+  "requirements": ["R1", "R2"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Perfect, your identity has been verified. Now I need to collect your current mailing address. Please provide your complete address including street, city, state, and ZIP code.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "I live at 2580 Broadway Street, New York, NY, 10025.",
+      "extracted_data": {
+        "street": "2580 Broadway Street",
+        "city": "New York",
+        "state": "NY",
+        "zipCode": "10025"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "I notice this might be a multi-unit building. Do you have an apartment number, suite number, or unit number?",
+      "context": {
+        "multiUnitDetected": true,
+        "unitNumberPrompt": true
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "Yes, it's apartment 15F.",
+      "extracted_data": {
+        "unitNumber": "15F"
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect. Your mailing address is 2580 Broadway Street, Apartment 15F, New York, New York, 1-0-0-2-5. Is that correct?",
+      "context": {
+        "addressConfirmation": true,
+        "ttsFormatting": {
+          "zipCode": "1-0-0-2-5",
+          "unitNumber": "Apartment 15F"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "message": "Great! Now I'd like to collect your email address if you have one. Can you provide your email?",
+      "context": {
+        "emailRequest": true
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "message": "It's jennifer.martinez@yahoo.com",
+      "extracted_data": {
+        "email": "jennifer.martinez@yahoo.com"
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "message": "Let me spell that back: j-e-n-n-i-f-e-r dot m-a-r-t-i-n-e-z at y-a-h-o-o dot c-o-m. Is that correct?",
+      "context": {
+        "emailSpelling": "j-e-n-n-i-f-e-r dot m-a-r-t-i-n-e-z at y-a-h-o-o dot c-o-m",
+        "awaitingConfirmation": true
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "message": "Perfect! I have your complete contact information. Now let's move on to some financial information.",
+      "context": {
+        "contactComplete": true
+      }
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "2580 Broadway Street",
+          "city": "New York",
+          "state": "NY",
+          "zipCode": "10025",
+          "unitNumber": "15F"
+        },
+        "email": "jennifer.martinez@yahoo.com"
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": true,
+      "unitNumberAsked": true
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 1,
+      "redacted_fields": {
+        "address": "****@****.***",
+        "email": "****@****.***"
+      }
+    }
+  ]
+}

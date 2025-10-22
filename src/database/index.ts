@@ -5,3 +5,4 @@ export * from './connection';
 export * from './migration';
 export * from './seeding';
 export * from './cli';
+export * from './contact-persistence';

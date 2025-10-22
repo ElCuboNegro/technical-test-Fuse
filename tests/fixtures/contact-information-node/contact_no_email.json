@@ -1,0 +1,120 @@
+{
+  "description": "Contact information collection with full address but no email provided",
+  "scenario": "no_email",
+  "requirements": ["R1", "R2"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Perfect, your identity has been verified. Now I need to collect your current mailing address. Please provide your complete address including street, city, state, and ZIP code.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "I live at 456 Pine Avenue, Los Angeles, CA, 90210.",
+      "extracted_data": {
+        "street": "456 Pine Avenue",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zipCode": "90210"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "Thank you. Is there a unit number or apartment number for this address?",
+      "context": {
+        "unitNumberCheck": true
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "No unit number."
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect. Your mailing address is 456 Pine Avenue, Los Angeles, California, 9-0-2-1-0. Is that correct?",
+      "context": {
+        "addressConfirmation": true,
+        "ttsFormatting": {
+          "zipCode": "9-0-2-1-0"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "message": "Great! Now I'd like to collect your email address if you have one. Can you provide your email?",
+      "context": {
+        "emailRequest": true
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "message": "I don't have an email address.",
+      "extracted_data": {
+        "email": null,
+        "declined": true
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "message": "That's perfectly fine. I'll note that you prefer not to provide an email address. Now let's move on to some financial information.",
+      "context": {
+        "contactComplete": true,
+        "emailDeclined": true
+      }
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "456 Pine Avenue",
+          "city": "Los Angeles",
+          "state": "CA",
+          "zipCode": "90210"
+        }
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": true,
+      "unitNumberAsked": true
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 1,
+      "redacted_fields": {
+        "address": "****@****.***",
+        "email": null
+      }
+    }
+  ]
+}

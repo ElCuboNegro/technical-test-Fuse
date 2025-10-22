@@ -1,0 +1,109 @@
+{
+  "description": "Contact information collection with system error simulation for database failure",
+  "scenario": "system_error",
+  "requirements": ["R5"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Now I need your complete mailing address. Please provide your street address, including house or building number.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "789 Maple Drive, Austin, Texas, 73301.",
+      "extracted_data": {
+        "street": "789 Maple Drive",
+        "city": "Austin",
+        "state": "Texas",
+        "zipCode": "73301"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "I apologize, but I'm experiencing a temporary system issue. Let me try to collect your information again. Please provide your complete mailing address.",
+      "context": {
+        "error": {
+          "code": "CONTACT_COLLECTION_ERROR",
+          "recoverable": true,
+          "systemError": true
+        },
+        "faultInjection": {
+          "dbWriteFailOnce": true
+        }
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "789 Maple Drive, Austin, TX, 73301.",
+      "extracted_data": {
+        "street": "789 Maple Drive",
+        "city": "Austin",
+        "state": "TX",
+        "zipCode": "73301"
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect! Your mailing address is 789 Maple Drive, Austin, Texas, 7-3-3-0-1. Is that correct?",
+      "context": {
+        "addressComplete": true,
+        "ttsFormatting": {
+          "zipCode": "7-3-3-0-1"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "789 Maple Drive",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "73301"
+        }
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": false,
+      "unitNumberAsked": false
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": false,
+      "reason": "CONTACT_COLLECTION_ERROR",
+      "attempt_number": 1
+    },
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 2
+    }
+  ]
+}

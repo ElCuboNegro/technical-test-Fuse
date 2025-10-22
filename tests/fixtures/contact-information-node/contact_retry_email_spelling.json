@@ -1,0 +1,106 @@
+{
+  "description": "Contact information collection with email spelling confirmation retry",
+  "scenario": "retry_email_spelling",
+  "requirements": ["R5"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Perfect! I have your complete address. Now I'd like to collect your email address if you have one. Can you provide your email?",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": true,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "It's sarah.johnson@gmail.com",
+      "extracted_data": {
+        "email": "sarah.johnson@gmail.com"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "Let me spell that back: s-a-r-a-h dot j-o-h-n-s-o-n at g-m-a-i-l dot c-o-m. Is that correct?",
+      "context": {
+        "emailSpelling": "s-a-r-a-h dot j-o-h-n-s-o-n at g-m-a-i-l dot c-o-m",
+        "awaitingConfirmation": true
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "No, that's not right. It's sarah.johnston@gmail.com with a T.",
+      "extracted_data": {
+        "email": "sarah.johnston@gmail.com",
+        "correction": true
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "I apologize for the confusion. Let me spell the corrected email: s-a-r-a-h dot j-o-h-n-s-t-o-n at g-m-a-i-l dot c-o-m. Is that correct?",
+      "context": {
+        "emailSpelling": "s-a-r-a-h dot j-o-h-n-s-t-o-n at g-m-a-i-l dot c-o-m",
+        "awaitingConfirmation": true,
+        "retryAttempt": 2
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "message": "Perfect! I have your complete contact information. Now let's move on to some financial information.",
+      "context": {
+        "contactComplete": true
+      }
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "123 Main Street",
+          "city": "Anytown",
+          "state": "CA",
+          "zipCode": "12345"
+        },
+        "email": "sarah.johnston@gmail.com"
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": true,
+      "unitNumberAsked": false
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": false,
+      "reason": "EMAIL_CONFIRMATION_FAILED",
+      "attempt_number": 1
+    },
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 2
+    }
+  ]
+}

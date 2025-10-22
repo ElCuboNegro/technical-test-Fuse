@@ -1,0 +1,107 @@
+{
+  "description": "Contact information collection with invalid state code that gets corrected on retry",
+  "scenario": "invalid_state_then_fix",
+  "requirements": ["R5"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Now I need your complete mailing address. Please provide your street address, including house or building number.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "I live at 456 Pine Avenue, Los Angeles, California, 90210.",
+      "extracted_data": {
+        "street": "456 Pine Avenue",
+        "city": "Los Angeles",
+        "state": "California",
+        "zipCode": "90210"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "I need the two-letter state abbreviation. For California, that would be CA. Can you please provide the two-letter state code?",
+      "context": {
+        "error": {
+          "code": "INVALID_STATE_CODE",
+          "recoverable": true,
+          "field": "state",
+          "formatExample": "CA, NY, TX, FL"
+        }
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "CA",
+      "extracted_data": {
+        "street": "456 Pine Avenue",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zipCode": "90210"
+      }
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect! Your mailing address is 456 Pine Avenue, Los Angeles, California, 9-0-2-1-0. Is that correct?",
+      "context": {
+        "addressComplete": true,
+        "ttsFormatting": {
+          "zipCode": "9-0-2-1-0"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "456 Pine Avenue",
+          "city": "Los Angeles",
+          "state": "CA",
+          "zipCode": "90210"
+        }
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": false,
+      "unitNumberAsked": false
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": false,
+      "reason": "INVALID_STATE_CODE",
+      "attempt_number": 1
+    },
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 2
+    }
+  ]
+}

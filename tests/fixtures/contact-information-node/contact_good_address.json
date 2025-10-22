@@ -1,0 +1,133 @@
+{
+  "description": "Complete contact information collection with full US address and email",
+  "scenario": "good_address",
+  "requirements": ["R1", "R2"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Perfect, your identity has been verified. Now I need to collect your current mailing address. Please provide your complete address including street, city, state, and ZIP code.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "I live at 1247 Oak Street, Denver, Colorado, 80202.",
+      "extracted_data": {
+        "street": "1247 Oak Street",
+        "city": "Denver",
+        "state": "Colorado",
+        "zipCode": "80202"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "Thank you. Is there a unit number or apartment number for this address?",
+      "context": {
+        "unitNumberCheck": true
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "No, it's just a house."
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect. Your mailing address is 1247 Oak Street, Denver, Colorado, 8-0-2-0-2. Is that correct?",
+      "context": {
+        "addressConfirmation": true,
+        "ttsFormatting": {
+          "zipCode": "8-0-2-0-2"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "message": "Great! Now I'd like to collect your email address if you have one. Can you provide your email?",
+      "context": {
+        "emailRequest": true
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "message": "It's mthompson.denver@gmail.com",
+      "extracted_data": {
+        "email": "mthompson.denver@gmail.com"
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "message": "Let me spell that back: m-t-h-o-m-p-s-o-n dot d-e-n-v-e-r at g-m-a-i-l dot c-o-m. Is that correct?",
+      "context": {
+        "emailSpelling": "m-t-h-o-m-p-s-o-n dot d-e-n-v-e-r at g-m-a-i-l dot c-o-m",
+        "awaitingConfirmation": true
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "message": "Perfect! I have your complete contact information. Now let's move on to some financial information.",
+      "context": {
+        "contactComplete": true
+      }
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "1247 Oak Street",
+          "city": "Denver",
+          "state": "CO",
+          "zipCode": "80202"
+        },
+        "email": "mthompson.denver@gmail.com"
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": true,
+      "unitNumberAsked": true
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 1,
+      "redacted_fields": {
+        "address": "****@****.***",
+        "email": "****@****.***"
+      }
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "description": "Contact information collection with ZIP+4 format testing",
+  "scenario": "zip9",
+  "requirements": ["R1", "R2"],
+  "conversation": [
+    {
+      "turn": 1,
+      "speaker": "agent",
+      "message": "Perfect, your identity has been verified. Now I need to collect your current mailing address. Please provide your complete address including street, city, state, and ZIP code.",
+      "context": {
+        "identityVerified": true,
+        "contactProgress": {
+          "addressComplete": false,
+          "emailComplete": false,
+          "unitNumberAsked": false
+        }
+      }
+    },
+    {
+      "turn": 2,
+      "speaker": "user",
+      "message": "I live at 123 Harvard Street, Cambridge, MA, 02139-4307.",
+      "extracted_data": {
+        "street": "123 Harvard Street",
+        "city": "Cambridge",
+        "state": "MA",
+        "zipCode": "02139-4307"
+      }
+    },
+    {
+      "turn": 3,
+      "speaker": "agent",
+      "message": "Thank you. Is there a unit number or apartment number for this address?",
+      "context": {
+        "unitNumberCheck": true
+      }
+    },
+    {
+      "turn": 4,
+      "speaker": "user",
+      "message": "No, it's a single-family home."
+    },
+    {
+      "turn": 5,
+      "speaker": "agent",
+      "message": "Perfect. Your mailing address is 123 Harvard Street, Cambridge, Massachusetts, 0-2-1-3-9, dash, 4-3-0-7. Is that correct?",
+      "context": {
+        "addressConfirmation": true,
+        "ttsFormatting": {
+          "zipCode": "0-2-1-3-9, dash, 4-3-0-7"
+        }
+      }
+    },
+    {
+      "turn": 6,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 7,
+      "speaker": "agent",
+      "message": "Great! Now I'd like to collect your email address if you have one. Can you provide your email?",
+      "context": {
+        "emailRequest": true
+      }
+    },
+    {
+      "turn": 8,
+      "speaker": "user",
+      "message": "It's robert.chen@mit.edu",
+      "extracted_data": {
+        "email": "robert.chen@mit.edu"
+      }
+    },
+    {
+      "turn": 9,
+      "speaker": "agent",
+      "message": "Let me spell that back: r-o-b-e-r-t dot c-h-e-n at m-i-t dot e-d-u. Is that correct?",
+      "context": {
+        "emailSpelling": "r-o-b-e-r-t dot c-h-e-n at m-i-t dot e-d-u",
+        "awaitingConfirmation": true
+      }
+    },
+    {
+      "turn": 10,
+      "speaker": "user",
+      "message": "Yes, that's correct."
+    },
+    {
+      "turn": 11,
+      "speaker": "agent",
+      "message": "Perfect! I have your complete contact information. Now let's move on to some financial information.",
+      "context": {
+        "contactComplete": true
+      }
+    }
+  ],
+  "expected_state": {
+    "collected": {
+      "contact": {
+        "address": {
+          "street": "123 Harvard Street",
+          "city": "Cambridge",
+          "state": "MA",
+          "zipCode": "02139-4307"
+        },
+        "email": "robert.chen@mit.edu"
+      }
+    },
+    "needs": {
+      "identity": false,
+      "contact": false,
+      "financial": true,
+      "confirm": false
+    },
+    "contactProgress": {
+      "addressComplete": true,
+      "emailComplete": true,
+      "unitNumberAsked": true
+    }
+  },
+  "expected_events": [
+    {
+      "node": "contact",
+      "success": true,
+      "attempt_number": 1,
+      "redacted_fields": {
+        "address": "****@****.***",
+        "email": "****@****.***"
+      }
+    }
+  ]
+}
