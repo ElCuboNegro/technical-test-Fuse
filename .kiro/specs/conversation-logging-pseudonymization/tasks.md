@@ -112,14 +112,14 @@
   - Test field-level encryption functionality
   - _Requirements: 1.3, 7.1, 7.2, 7.3_
 
-- [ ] 7. Create storage adapter with failure handling
+- [x] 7. Create storage adapter with failure handling
   - Implement StorageAdapter class with insertEvent, insertAudit, updateGraph methods
   - Add Redis persistence for storage outages with configurable queue limits
   - Implement chronological event flushing from Redis when storage is restored
   - Add connection pooling and timeout handling for both Redis and PostgreSQL
   - _Requirements: 5.1, 5.2, 5.3_
 
-- [ ] 7.1 Write integration tests for storage adapter
+- [x] 7.1 Write integration tests for storage adapter
   - Test storage outage handling with Redis persistence
   - Test chronological event flushing from Redis on recovery
   - Test connection timeout and retry behavior for both Redis and PostgreSQL
