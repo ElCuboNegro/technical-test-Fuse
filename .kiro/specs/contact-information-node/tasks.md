@@ -122,10 +122,6 @@
 
 - [x] 3.4 Write security & PII tests (F)
 
-
-
-
-
   - Test no raw street/city/state/ZIP/email in application logs, only redacted payloads
   - Test SQL parameters are bound (no string interpolation)
   - Test encryption-at-rest verified for `contact_information` table
@@ -133,18 +129,20 @@
   - _Requirements: R6.1, R6.2, R6.3, R6.4_
 
 - [x] 3.5 Write concurrency & idempotency tests (G)
-
-
-
-
   - Test parallel sessions with same `user_id` do NOT cross-contaminate `contactProgress`
-
   - Test re-invoking node with identical inputs is idempotent (no duplicate rows, no counter skew)
   - Test concurrent database writes and session management
   - Test session isolation and data protection
   - _Requirements: R4.3, R6.3_
 
-- [-] 3.6 Write golden replay tests for voice/TTS (H)
+- [x] 3.6 Write golden replay tests for voice/TTS (H)
+
+
+
+
+
+
+
 
   - Test exact TTS strings for address confirmation (with/without unit)
   - Test exact TTS strings for ZIP (5-digit and ZIP+4)
@@ -155,7 +153,6 @@
 ## Phase 4: Implementation (After Tests Are Written)
 
 - [x] 4. Implement address validation utilities
-
   - Implement `validateState()` function with all 50 US states + DC validation
   - Create `validateZipCode()` function supporting 5-digit and 9-digit formats
   - Build `normalizeAddress()` function with trim and uppercase state normalization
@@ -222,9 +219,12 @@
 
 ## Phase 6: Database Integration & Final Validation
 
--
+- [x] 6. Create database integration for contact information
 
-- [-] 6. Create database integration for contact information
+
+
+
+
 
   - Implement `contact_information` table schema with proper foreign key constraints
   - Create database persistence functions with parameterized queries
@@ -240,7 +240,10 @@
   - Ensure no `console.log` in production code
   - _Requirements: All R1-R6_
 
-- [ ] 6.2 Final integration and deployment validation
+- [x] 6.2 Final integration and deployment validation
+
+
+
   - Integrate contact node with main LangGraph conversation flow
   - Test end-to-end contact information collection with voice optimization
   - Validate database schema migration and data persistence

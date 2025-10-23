@@ -1,0 +1,139 @@
+{
+  "description": "Golden baselines for voice/TTS formatting - approval test data",
+  "version": "1.0.0",
+  "last_updated": "2024-01-01",
+  "baselines": {
+    "address_confirmation": {
+      "without_unit": {
+        "input": {
+          "street": "123 Main Street",
+          "city": "Anytown",
+          "state": "CA",
+          "zipCode": "12345"
+        },
+        "expected_tts": "123 Main Street, Anytown, CA, 1-2-3-4-5",
+        "expected_confirmation": "Your mailing address is 123 Main Street, Anytown, CA, 1-2-3-4-5. Is that correct?"
+      },
+      "with_unit": {
+        "input": {
+          "street": "456 Oak Avenue",
+          "city": "Springfield",
+          "state": "IL",
+          "zipCode": "62701",
+          "unitNumber": "Apt 4B"
+        },
+        "expected_tts": "456 Oak Avenue, Apt 4B, Springfield, IL, 6-2-7-0-1",
+        "expected_confirmation": "Your mailing address is 456 Oak Avenue, Apt 4B, Springfield, IL, 6-2-7-0-1. Is that correct?"
+      },
+      "with_zip_plus_4": {
+        "input": {
+          "street": "789 Pine Road",
+          "city": "Riverside",
+          "state": "FL",
+          "zipCode": "33101-1234",
+          "unitNumber": "Suite 200"
+        },
+        "expected_tts": "789 Pine Road, Suite 200, Riverside, FL, 3-3-1-0-1, dash, 1-2-3-4",
+        "expected_confirmation": "Your mailing address is 789 Pine Road, Suite 200, Riverside, FL, 3-3-1-0-1, dash, 1-2-3-4. Is that correct?"
+      }
+    },
+    "zip_codes": {
+      "five_digit": [
+        { "input": "12345", "expected": "1-2-3-4-5" },
+        { "input": "90210", "expected": "9-0-2-1-0" },
+        { "input": "00501", "expected": "0-0-5-0-1" },
+        { "input": "80202", "expected": "8-0-2-0-2" },
+        { "input": "10001", "expected": "1-0-0-0-1" }
+      ],
+      "zip_plus_4": [
+        { "input": "12345-6789", "expected": "1-2-3-4-5, dash, 6-7-8-9" },
+        { "input": "90210-1234", "expected": "9-0-2-1-0, dash, 1-2-3-4" },
+        { "input": "00501-0001", "expected": "0-0-5-0-1, dash, 0-0-0-1" },
+        { "input": "80202-4567", "expected": "8-0-2-0-2, dash, 4-5-6-7" },
+        { "input": "10001-9999", "expected": "1-0-0-0-1, dash, 9-9-9-9" }
+      ],
+      "edge_cases": [
+        { "input": "00000", "expected": "0-0-0-0-0" },
+        { "input": "99999", "expected": "9-9-9-9-9" },
+        { "input": "00000-0000", "expected": "0-0-0-0-0, dash, 0-0-0-0" },
+        { "input": "99999-9999", "expected": "9-9-9-9-9, dash, 9-9-9-9" }
+      ]
+    },
+    "email_spelling": {
+      "simple": [
+        { "input": "user@example.com", "expected": "u-s-e-r  at  e-x-a-m-p-l-e  dot  c-o-m" },
+        { "input": "test@domain.org", "expected": "t-e-s-t  at  d-o-m-a-i-n  dot  o-r-g" },
+        { "input": "info@company.net", "expected": "i-n-f-o  at  c-o-m-p-a-n-y  dot  n-e-t" }
+      ],
+      "complex": [
+        { "input": "mike.smith@gmail.com", "expected": "m-i-k-e  dot  s-m-i-t-h  at  g-m-a-i-l  dot  c-o-m" },
+        { "input": "john.doe+work@company.co.uk", "expected": "j-o-h-n  dot  d-o-e  plus  w-o-r-k  at  c-o-m-p-a-n-y  dot  c-o  dot  u-k" },
+        { "input": "firstname.lastname@subdomain.example.com", "expected": "f-i-r-s-t-n-a-m-e  dot  l-a-s-t-n-a-m-e  at  s-u-b-d-o-m-a-i-n  dot  e-x-a-m-p-l-e  dot  c-o-m" }
+      ],
+      "special_characters": [
+        { "input": "user+tag@example.com", "expected": "u-s-e-r  plus  t-a-g  at  e-x-a-m-p-l-e  dot  c-o-m" },
+        { "input": "user-name@example.com", "expected": "u-s-e-r  dash  n-a-m-e  at  e-x-a-m-p-l-e  dot  c-o-m" },
+        { "input": "user_name@example.com", "expected": "u-s-e-r  underscore  n-a-m-e  at  e-x-a-m-p-l-e  dot  c-o-m" }
+      ],
+      "with_numbers": [
+        { "input": "user123@example.com", "expected": "u-s-e-r 1-2-3  at  e-x-a-m-p-l-e  dot  c-o-m" },
+        { "input": "test2024@domain.org", "expected": "t-e-s-t 2-0-2-4  at  d-o-m-a-i-n  dot  o-r-g" },
+        { "input": "user1@example2.com", "expected": "u-s-e-r 1  at  e-x-a-m-p-l-e 2  dot  c-o-m" }
+      ],
+      "real_world": [
+        { "input": "mthompson.denver@gmail.com", "expected": "m-t-h-o-m-p-s-o-n  dot  d-e-n-v-e-r  at  g-m-a-i-l  dot  c-o-m" },
+        { "input": "sarah.johnson+personal@outlook.com", "expected": "s-a-r-a-h  dot  j-o-h-n-s-o-n  plus  p-e-r-s-o-n-a-l  at  o-u-t-l-o-o-k  dot  c-o-m" },
+        { "input": "contact@business-solutions.co", "expected": "c-o-n-t-a-c-t  at  b-u-s-i-n-e-s-s  dash  s-o-l-u-t-i-o-n-s  dot  c-o" }
+      ]
+    }
+  },
+  "formatting_rules": {
+    "address": {
+      "component_separator": ", ",
+      "zip_format": "digit-by-digit with dashes",
+      "zip_plus_4_format": "main-digits, dash, extension-digits",
+      "unit_placement": "after street, before city"
+    },
+    "email": {
+      "letter_separator": "-",
+      "special_word_spacing": "  word  ",
+      "number_handling": "space before, dash between digits",
+      "at_symbol": " at ",
+      "dot_symbol": " dot ",
+      "plus_symbol": " plus ",
+      "dash_symbol": " dash ",
+      "underscore_symbol": " underscore "
+    },
+    "zip": {
+      "digit_separator": "-",
+      "plus_4_separator": ", dash, ",
+      "leading_zeros": "preserved"
+    }
+  },
+  "test_scenarios": {
+    "approval_test_workflow": [
+      "1. Run golden replay tests",
+      "2. If tests fail due to TTS formatting changes:",
+      "3. Verify new TTS output is correct for voice interfaces",
+      "4. Update golden baselines in this file",
+      "5. Update test expectations in voice-tts-golden-replay.test.ts",
+      "6. Re-run tests to confirm they pass",
+      "7. Document the formatting change in version history"
+    ],
+    "voice_interface_validation": [
+      "Test with actual TTS engine to verify pronunciation",
+      "Ensure natural pauses between address components",
+      "Verify email spelling is clear and unambiguous",
+      "Check ZIP code pronunciation is digit-by-digit",
+      "Validate special character pronunciation"
+    ]
+  },
+  "version_history": [
+    {
+      "version": "1.0.0",
+      "date": "2024-01-01",
+      "changes": "Initial golden baselines established",
+      "requirements": ["R3.1", "R3.2", "R3.3", "R3.4"]
+    }
+  ]
+}
