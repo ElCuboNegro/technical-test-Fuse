@@ -186,6 +186,11 @@ describe('Spontime API Integration Tests', () => {
       const tagResult = await pool.query(`
         SELECT id FROM interest_tags WHERE name = 'Sports' LIMIT 1;
       `);
+      
+      if (tagResult.rows.length === 0) {
+        throw new Error('Sports tag not found. Run migrations first.');
+      }
+      
       sportsTagId = tagResult.rows[0].id;
 
       // Create a test plan

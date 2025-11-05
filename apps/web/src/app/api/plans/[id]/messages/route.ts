@@ -241,6 +241,13 @@ export async function POST(
     );
 
     const user = userResult.rows[0];
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
 
     const response: Message = {
       id: message.id,

@@ -197,8 +197,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       max_participants: row.max_participants,
       status: row.status,
       distance_meters: Math.round(row.distance_meters),
-      tags: row.tags || [],
-      member_count: parseInt(row.member_count) || 0,
+      tags: row.tags ?? [],
+      member_count: parseInt(row.member_count) ?? 0,
       created_at: row.created_at,
     }));
 

@@ -20,8 +20,12 @@ const args = process.argv.slice(2);
 const command = args[0] || 'setup';
 
 // Database configuration from environment
-const databaseUrl = process.env.DATABASE_URL || 
-  `postgresql://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.POSTGRES_HOST}:${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`;
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  console.error('❌ DATABASE_URL environment variable is not set');
+  process.exit(1);
+}
 
 const pool = new Pool({
   connectionString: databaseUrl,
